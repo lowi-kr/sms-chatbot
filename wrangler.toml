@@ -1,0 +1,16 @@
+name = "sms-chatbot"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sms-chatbot-db"
+database_id = "YOUR_D1_DATABASE_ID"
+
+[vars]
+TELNYX_API_KEY = ""
+TELNYX_PUBLIC_KEY = ""
+GEMINI_API_KEY = ""
+GOOGLE_SHEETS_ID = ""
+GOOGLE_SERVICE_ACCOUNT_EMAIL = ""
+GOOGLE_PRIVATE_KEY = ""

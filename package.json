@@ -1,0 +1,17 @@
+{
+  "name": "sms-chatbot",
+  "version": "1.0.0",
+  "description": "SMS chatbot powered by Gemini AI, Telnyx, and Cloudflare Workers",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create sms-chatbot-db",
+    "db:init": "wrangler d1 execute sms-chatbot-db --file=schema.sql",
+    "db:init:remote": "wrangler d1 execute sms-chatbot-db --remote --file=schema.sql",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
