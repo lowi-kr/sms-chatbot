@@ -5,7 +5,7 @@ compatibility_date = "2024-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "sms-chatbot-db"
-database_id = "YOUR_D1_DATABASE_ID"
+database_id = "ac43486d-87fc-4f9b-a8a6-5f45b7da25f6"
 
 [vars]
 TELNYX_API_KEY = ""
