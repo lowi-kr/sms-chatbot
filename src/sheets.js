@@ -63,6 +63,9 @@ export async function logToSheets(env, { phoneNumber, conversationName, role, me
     const sheetId = env.GOOGLE_SHEETS_ID;
 
     // Append row to sheet
+    // Only log metadata, not actual message content for privacy
+    const messageLength = message.length;
+
     const response = await fetch(
       `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Logs!A:E:append?valueInputOption=USER_ENTERED`,
       {
@@ -72,7 +75,7 @@ export async function logToSheets(env, { phoneNumber, conversationName, role, me
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          values: [[timestamp, phoneNumber, conversationName, role, message]],
+          values: [[timestamp, phoneNumber, conversationName, role, messageLength]],
         }),
       }
     );
@@ -101,7 +104,7 @@ export async function initializeSheet(env) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          values: [['Timestamp', 'Phone Number', 'Conversation', 'Role', 'Message']],
+          values: [['Timestamp', 'Phone Number', 'Conversation', 'Role', 'Message Length (chars)']],
         }),
       }
     );
