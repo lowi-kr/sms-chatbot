@@ -29,7 +29,7 @@ export async function getGeminiResponse(env, conversationHistory, userMessage) {
           temperature: 0.9,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 500,
+          maxOutputTokens: 350,
         },
         safetySettings: [
           { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
@@ -59,5 +59,8 @@ export async function getGeminiResponse(env, conversationHistory, userMessage) {
     return "I'm sorry, I can't respond to that. Please keep our conversation appropriate.";
   }
 
-  return candidate.content?.parts?.[0]?.text || "I couldn't generate a response. Please try again.";
+  const responseText = candidate.content?.parts?.[0]?.text || "I couldn't generate a response. Please try again.";
+  
+  // Hard truncate to 950 chars to respect SMS limits
+  return responseText.length > 950 ? responseText.substring(0, 947) + '...' : responseText;
 }
