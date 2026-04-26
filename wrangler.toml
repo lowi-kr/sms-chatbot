@@ -11,9 +11,3 @@ invocation_logs = true
 binding = "DB"
 database_name = "sms-chatbot-db"
 database_id = "ac43486d-87fc-4f9b-a8a6-5f45b7da25f6"
-
-[vars]
-TELNYX_PHONE_NUMBER = ""
-GOOGLE_SHEETS_ID = ""
-GOOGLE_SERVICE_ACCOUNT_EMAIL = ""
-GOOGLE_PRIVATE_KEY = ""
