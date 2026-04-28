@@ -67,7 +67,7 @@ export async function logToSheets(env, { phoneNumber, conversationName, role, me
     const messageLength = message.length;
 
     const response = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Logs!A:E:append?valueInputOption=USER_ENTERED`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Logs!A:E?valueInputOption=USER_ENTERED:append`,
       {
         method: 'POST',
         headers: {
