@@ -48,6 +48,12 @@ async function getAccessToken(env) {
   });
 
   const tokenData = await tokenResponse.json();
+
+  // Validate access token exists
+  if (!tokenData.access_token) {
+    throw new Error('Failed to obtain access token: ' + JSON.stringify(tokenData));
+  }
+
   return tokenData.access_token;
 }
 
@@ -62,12 +68,11 @@ export async function logToSheets(env, { phoneNumber, conversationName, role, me
     const timestamp = new Date().toISOString();
     const sheetId = env.GOOGLE_SHEETS_ID;
 
-    // Append row to sheet
     // Only log metadata, not actual message content for privacy
     const messageLength = message.length;
 
     const response = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Logs!A:E?valueInputOption=USER_ENTERED:append`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Logs!A:E:append?valueInputOption=USER_ENTERED`,
       {
         method: 'POST',
         headers: {
@@ -81,16 +86,21 @@ export async function logToSheets(env, { phoneNumber, conversationName, role, me
     );
 
     if (!response.ok) {
-      console.error('Sheets log failed:', await response.text());
+      const errorText = await response.text();
+      // Log auth errors separately for easier debugging
+      if (response.status === 401 || response.status === 403) {
+        console.error('Sheets auth error - check service account permissions:', errorText);
+      } else {
+        console.error('Sheets log failed:', errorText);
+      }
     }
   } catch (err) {
     // Never let logging failures break the chatbot
-    console.error('Sheets logging error:', err);
+    console.error('Sheets logging error:', err.message);
   }
 }
 
 export async function initializeSheet(env) {
-  // Ensure headers exist in the sheet
   try {
     const accessToken = await getAccessToken(env);
     const sheetId = env.GOOGLE_SHEETS_ID;
@@ -109,6 +119,6 @@ export async function initializeSheet(env) {
       }
     );
   } catch (err) {
-    console.error('Sheet init error:', err);
+    console.error('Sheet init error:', err.message);
   }
 }
