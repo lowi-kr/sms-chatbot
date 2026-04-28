@@ -65,7 +65,7 @@ export async function logToSheets(env, { phoneNumber, conversationName, role, me
     }
 
     const accessToken = await getAccessToken(env);
-    const timestamp = new Date().toISOString();
+    const timestamp = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
     const sheetId = env.GOOGLE_SHEETS_ID;
 
     // Only log metadata, not actual message content for privacy
