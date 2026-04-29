@@ -122,3 +122,96 @@ export async function initializeSheet(env) {
     console.error('Sheet init error:', err.message);
   }
 }
+export async function logFilteredMessage(env, { phoneNumber, message }) {
+  try {
+    if (!env.GOOGLE_SHEETS_ID || !env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !env.GOOGLE_PRIVATE_KEY) {
+      return;
+    }
+
+    const accessToken = await getAccessToken(env);
+    const timestamp = new Date().toISOString();
+    const sheetId = env.GOOGLE_SHEETS_ID;
+
+    // First append the row
+    const appendResponse = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Logs!A:E:append?valueInputOption=USER_ENTERED&includeValuesInResponse=true`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          values: [[timestamp, phoneNumber, 'FILTERED', '⚠️ BLOCKED', message]],
+        }),
+      }
+    );
+
+    const appendData = await appendResponse.json();
+    
+    // Get the row number that was just added
+    const updatedRange = appendData.updates?.updatedRange;
+    if (!updatedRange) return;
+
+    // Extract row number from range like "Logs!A15:E15"
+    const rowMatch = updatedRange.match(/(\d+)$/);
+    if (!rowMatch) return;
+    const rowNumber = parseInt(rowMatch[1]);
+
+    // Now color that row red
+    // First get sheet ID (not the spreadsheet ID)
+    const metaResponse = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`,
+      {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      }
+    );
+    const meta = await metaResponse.json();
+    const sheetTabId = meta.sheets?.find(s => s.properties.title === 'Logs')?.properties.sheetId ?? 0;
+
+    // Apply red background to the row
+    await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requests: [{
+            repeatCell: {
+              range: {
+                sheetId: sheetTabId,
+                startRowIndex: rowNumber - 1,
+                endRowIndex: rowNumber,
+                startColumnIndex: 0,
+                endColumnIndex: 5,
+              },
+              cell: {
+                userEnteredFormat: {
+                  backgroundColor: {
+                    red: 1.0,
+                    green: 0.2,
+                    blue: 0.2,
+                  },
+                  textFormat: {
+                    bold: true,
+                    foregroundColor: {
+                      red: 1.0,
+                      green: 1.0,
+                      blue: 1.0,
+                    }
+                  }
+                },
+              },
+              fields: 'userEnteredFormat(backgroundColor,textFormat)',
+            },
+          }],
+        }),
+      }
+    );
+  } catch (err) {
+    console.error('Filtered message log error:', err);
+  }
+}

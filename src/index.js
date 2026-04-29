@@ -4,7 +4,7 @@ import { parseInboundWebhook, sendSMS } from './telnyx.js';
 import { parseCommand, handleCommand } from './commands.js';
 import { containsBlockedContent } from './filter.js';
 import { getGeminiResponse } from './gemini.js';
-import { logToSheets } from './sheets.js';
+import { logToSheets, logFilteredMessage } from './sheets.js';
 import {
   isBlacklisted, isWhitelisted, hasWhitelistEntries,
   getOrCreateActiveConversation, getConversationHistory,
@@ -79,10 +79,14 @@ async function processMessage(env, phoneNumber, text) {
 
     // 4. Content filter check
     if (containsBlockedContent(text)) {
-      await sendSMS(env, phoneNumber,
-        "Sorry, I can't respond to that kind of message. Please keep our conversation appropriate."
-      );
-      return;
+       await logFilteredMessage(env, {
+          phoneNumber,
+          message: text,
+       });
+       await sendSMS(env, phoneNumber,
+         "Sorry, I can't respond to that kind of message. Please keep our conversation appropriate."
+       );
+       return;
     }
 
     // 5. Get or create active conversation
