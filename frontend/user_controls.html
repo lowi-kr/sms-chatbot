@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-low": "#131b2e",
+            "surface-tint": "#c0c1ff",
+            "secondary-container": "#39485a",
+            "on-primary-fixed-variant": "#2f2ebe",
+            "secondary-fixed-dim": "#b9c8de",
+            "on-secondary-fixed-variant": "#39485a",
+            "on-surface": "#dae2fd",
+            "primary-fixed": "#e1e0ff",
+            "primary": "#c0c1ff",
+            "on-primary-fixed": "#07006c",
+            "surface-container": "#171f33",
+            "on-secondary-container": "#a7b6cc",
+            "surface-variant": "#2d3449",
+            "on-tertiary-fixed": "#001e2f",
+            "on-background": "#dae2fd",
+            "secondary": "#b9c8de",
+            "tertiary": "#89ceff",
+            "surface-dim": "#0b1326",
+            "on-surface-variant": "#c7c4d7",
+            "error": "#ffb4ab",
+            "inverse-surface": "#dae2fd",
+            "outline-variant": "#464554",
+            "on-primary-container": "#0d0096",
+            "surface-bright": "#31394d",
+            "surface-container-high": "#222a3d",
+            "on-tertiary-fixed-variant": "#004c6e",
+            "on-error-container": "#ffdad6",
+            "surface-container-highest": "#2d3449",
+            "on-tertiary-container": "#002d43",
+            "inverse-on-surface": "#283044",
+            "on-tertiary": "#00344d",
+            "background": "#0b1326",
+            "tertiary-fixed-dim": "#89ceff",
+            "surface": "#0b1326",
+            "secondary-fixed": "#d4e4fa",
+            "outline": "#908fa0",
+            "inverse-primary": "#494bd6",
+            "tertiary-fixed": "#c9e6ff",
+            "on-primary": "#1000a9",
+            "on-secondary": "#233143",
+            "on-error": "#690005",
+            "tertiary-container": "#009ada",
+            "primary-fixed-dim": "#c0c1ff",
+            "on-secondary-fixed": "#0d1c2d",
+            "error-container": "#93000a",
+            "primary-container": "#8083ff",
+            "surface-container-lowest": "#060e20"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "lg": "24px",
+            "sidebar-width": "260px",
+            "base": "4px",
+            "xl": "32px",
+            "gutter": "20px",
+            "md": "16px",
+            "xs": "4px",
+            "sm": "8px",
+            "max-content-width": "1440px"
+          },
+          "fontFamily": {
+            "h2": ["Space Grotesk"],
+            "display": ["Space Grotesk"],
+            "body-lg": ["Inter"],
+            "label-caps": ["Inter"],
+            "body-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "h1": ["Space Grotesk"],
+            "code-sm": ["monospace"]
+          },
+          "fontSize": {
+            "h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "display": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "label-caps": ["11px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+            "body-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+            "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+            "h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "code-sm": ["13px", {"lineHeight": "1.6", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar Anchor -->
+<aside class="fixed left-0 top-0 h-full w-[260px] border-r border-slate-800 bg-slate-900 dark:bg-[#0F172A] flex flex-col font-['Space_Grotesk'] tracking-tight z-50">
+<div class="p-6">
+<div class="text-xl font-bold tracking-tighter text-slate-100 dark:text-white uppercase">SMS CORE</div>
+<div class="text-[10px] text-indigo-400 font-medium tracking-widest mt-1">v2.4.0-STABLE</div>
+</div>
+<nav class="flex-1 mt-4">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/50" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/50" href="#">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+<span class="text-sm">Message Logs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/50" href="#">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+<span class="text-sm">Analytics</span>
+</a>
+<!-- Active State for User Management / User Control -->
+<a class="flex items-center gap-3 px-4 py-3 text-indigo-400 bg-indigo-500/10 border-r-2 border-indigo-500 font-medium" href="#">
+<span class="material-symbols-outlined text-[20px]">security</span>
+<span class="text-sm">User Control</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/50" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="text-sm">System Settings</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-800">
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-200 text-sm transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">code</span>
+<span>API Docs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-200 text-sm transition-colors mt-2" href="#">
+<span class="material-symbols-outlined text-[18px]">contact_support</span>
+<span>Support</span>
+</a>
+<div class="mt-6 flex items-center gap-3 px-4">
+<div class="w-8 h-8 rounded bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-indigo-400 text-sm">person</span>
+</div>
+<div>
+<div class="text-xs font-semibold text-slate-200">OP-742</div>
+<div class="text-[10px] text-slate-500 uppercase">Administrator</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- TopAppBar Anchor -->
+<header class="fixed top-0 right-0 w-[calc(100%-260px)] h-16 border-b border-slate-800 bg-slate-950 dark:bg-[#020617] flex items-center justify-between px-6 z-40 font-['Space_Grotesk'] text-sm">
+<div class="flex items-center gap-8">
+<div class="relative">
+<span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-500">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</span>
+<input class="bg-slate-900 border border-slate-800 text-slate-300 py-1.5 pl-10 pr-4 rounded w-64 focus:outline-none focus:border-indigo-500 transition-colors" placeholder="Search parameters..." type="text"/>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
+<span class="text-[11px] font-semibold text-slate-400 tracking-wider">TELNYX CONNECTED</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
+<span class="text-[11px] font-semibold text-slate-400 tracking-wider">D1 DATABASE SYNCED</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20 text-indigo-400 cursor-pointer hover:bg-indigo-500/20 transition-all">
+<span class="material-symbols-outlined text-[18px]">sensors</span>
+<span class="text-[11px] font-bold">LIVE FEED</span>
+</div>
+<div class="flex items-center gap-3 border-l border-slate-800 pl-4 ml-2">
+<span class="material-symbols-outlined text-slate-500 hover:text-slate-200 cursor-pointer transition-colors">notifications</span>
+<button class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded font-medium text-[12px] transition-colors">
+          Compose SMS
+        </button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-[260px] pt-24 p-8 min-h-screen">
+<div class="max-w-[1440px] mx-auto">
+<div class="mb-10 flex items-end justify-between">
+<div>
+<h1 class="font-h1 text-h1 text-on-surface">User Management</h1>
+<p class="text-on-surface-variant text-body-sm mt-1">Configure global access control policies and endpoint filtering rules.</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-surface-container-high border border-outline-variant px-4 py-2 rounded text-body-sm text-on-surface flex items-center gap-2 hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
+            Export Audit Logs
+          </button>
+<button class="bg-primary text-on-primary px-4 py-2 rounded text-body-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            Add Entry
+          </button>
+</div>
+</div>
+<!-- Bento-style Statistics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-8">
+<div class="bg-surface-container border border-outline-variant p-5 rounded-xl">
+<div class="text-label-caps text-slate-500 mb-1">TOTAL BLACKLISTED</div>
+<div class="text-display text-white">2,841</div>
+<div class="mt-4 flex items-center gap-2 text-error text-[12px]">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span>+12% vs last month</span>
+</div>
+</div>
+<div class="bg-surface-container border border-outline-variant p-5 rounded-xl">
+<div class="text-label-caps text-slate-500 mb-1">WHITELISTED ENTITIES</div>
+<div class="text-display text-white">152</div>
+<div class="mt-4 flex items-center gap-2 text-indigo-400 text-[12px]">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span>Policy: Strict Access</span>
+</div>
+</div>
+<div class="bg-surface-container border border-outline-variant p-5 rounded-xl">
+<div class="text-label-caps text-slate-500 mb-1">SMS THROUGHPUT</div>
+<div class="text-display text-white">48.2k</div>
+<div class="mt-4 flex items-center gap-2 text-emerald-400 text-[12px]">
+<span class="material-symbols-outlined text-[16px]">speed</span>
+<span>Latency: 84ms AVG</span>
+</div>
+</div>
+<div class="bg-surface-container border border-outline-variant p-5 rounded-xl overflow-hidden relative">
+<div class="text-label-caps text-slate-500 mb-1">SECURITY ALERT LEVEL</div>
+<div class="text-display text-indigo-400">NOMINAL</div>
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-[120px]">shield</span>
+</div>
+</div>
+</div>
+<!-- Split View Tables -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<!-- Whitelist Section -->
+<div class="bg-surface-container border border-outline-variant rounded-xl flex flex-col overflow-hidden">
+<div class="p-4 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-indigo-400">verified</span>
+<h2 class="font-h2 text-h2 text-white">Whitelist</h2>
+</div>
+<span class="text-[11px] font-mono bg-indigo-500/10 text-indigo-400 px-2 py-1 rounded">PRIORITY_ACCESS</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-label-caps text-slate-500 border-b border-outline-variant bg-slate-900/40">
+<th class="px-6 py-3">Phone Number</th>
+<th class="px-6 py-3">Label</th>
+<th class="px-6 py-3">Date Added</th>
+<th class="px-6 py-3 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="text-body-sm text-on-surface">
+<tr class="border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
+<td class="px-6 py-4 font-mono text-indigo-300">+1 (555) 012-3456</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded bg-surface-variant text-[11px] font-medium border border-outline-variant">SYSTEM_ADMIN</span>
+</td>
+<td class="px-6 py-4 text-slate-400">2023-10-12</td>
+<td class="px-6 py-4 text-right">
+<button class="text-indigo-400 hover:text-indigo-300 font-medium text-[12px] flex items-center gap-1 ml-auto">
+<span class="material-symbols-outlined text-[16px]">person_remove</span>
+                      Remove
+                    </button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
+<td class="px-6 py-4 font-mono text-indigo-300">+1 (555) 987-6543</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded bg-surface-variant text-[11px] font-medium border border-outline-variant">CORE_DEV_TEAM</span>
+</td>
+<td class="px-6 py-4 text-slate-400">2023-11-04</td>
+<td class="px-6 py-4 text-right">
+<button class="text-indigo-400 hover:text-indigo-300 font-medium text-[12px] flex items-center gap-1 ml-auto">
+<span class="material-symbols-outlined text-[16px]">person_remove</span>
+                      Remove
+                    </button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
+<td class="px-6 py-4 font-mono text-indigo-300">+44 20 7946 0958</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded bg-surface-variant text-[11px] font-medium border border-outline-variant">UK_OFFICE_BOT</span>
+</td>
+<td class="px-6 py-4 text-slate-400">2023-12-01</td>
+<td class="px-6 py-4 text-right">
+<button class="text-indigo-400 hover:text-indigo-300 font-medium text-[12px] flex items-center gap-1 ml-auto">
+<span class="material-symbols-outlined text-[16px]">person_remove</span>
+                      Remove
+                    </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 bg-surface-container-low border-t border-outline-variant">
+<a class="text-[12px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-2" href="#">
+              View all 152 whitelist entries <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Blacklist Section -->
+<div class="bg-surface-container border border-outline-variant rounded-xl flex flex-col overflow-hidden">
+<div class="p-4 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-error">block</span>
+<h2 class="font-h2 text-h2 text-white">Blacklist</h2>
+</div>
+<span class="text-[11px] font-mono bg-error/10 text-error px-2 py-1 rounded">TRAFFIC_FILTER_ON</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-label-caps text-slate-500 border-b border-outline-variant bg-slate-900/40">
+<th class="px-6 py-3">Phone Number</th>
+<th class="px-6 py-3">Reason</th>
+<th class="px-6 py-3">Date Added</th>
+<th class="px-6 py-3 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="text-body-sm text-on-surface">
+<tr class="border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
+<td class="px-6 py-4 font-mono text-error/80">+1 (555) 666-0666</td>
+<td class="px-6 py-4 text-slate-300">Repeated Spam Attempt</td>
+<td class="px-6 py-4 text-slate-400">2024-01-15</td>
+<td class="px-6 py-4 text-right">
+<button class="bg-error/10 text-error px-3 py-1 rounded border border-error/20 hover:bg-error/20 transition-all font-medium text-[11px]">
+                      Unblock
+                    </button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
+<td class="px-6 py-4 font-mono text-error/80">+1 (555) 777-1212</td>
+<td class="px-6 py-4 text-slate-300">Phishing Pattern Detected</td>
+<td class="px-6 py-4 text-slate-400">2024-01-18</td>
+<td class="px-6 py-4 text-right">
+<button class="bg-error/10 text-error px-3 py-1 rounded border border-error/20 hover:bg-error/20 transition-all font-medium text-[11px]">
+                      Unblock
+                    </button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
+<td class="px-6 py-4 font-mono text-error/80">+86 10 6543 2109</td>
+<td class="px-6 py-4 text-slate-300">Malformed SMS Payload</td>
+<td class="px-6 py-4 text-slate-400">2024-01-20</td>
+<td class="px-6 py-4 text-right">
+<button class="bg-error/10 text-error px-3 py-1 rounded border border-error/20 hover:bg-error/20 transition-all font-medium text-[11px]">
+                      Unblock
+                    </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 bg-surface-container-low border-t border-outline-variant">
+<a class="text-[12px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-2" href="#">
+              View all 2,841 blacklist entries <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+<!-- System Logic Overlay Preview (Minimalist Corporate Detail) -->
+<div class="mt-8 bg-[#0F172A] border border-slate-800 rounded-xl p-6">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-indigo-400">terminal</span>
+<span class="font-h2 text-h2 text-white">Filter Logic Log</span>
+</div>
+<div class="flex gap-2">
+<span class="w-3 h-3 rounded-full bg-slate-800"></span>
+<span class="w-3 h-3 rounded-full bg-slate-800"></span>
+<span class="w-3 h-3 rounded-full bg-slate-800"></span>
+</div>
+</div>
+<div class="font-mono text-code-sm text-indigo-300 bg-slate-950 p-4 rounded border border-slate-900 overflow-hidden leading-relaxed">
+<div class="flex gap-4">
+<span class="text-slate-600">09:42:12</span>
+<span><span class="text-emerald-400">[INFO]</span> Executing rule set: global_filtering_v2.0</span>
+</div>
+<div class="flex gap-4">
+<span class="text-slate-600">09:42:15</span>
+<span><span class="text-indigo-400">[SYSLOG]</span> Syncing D1 edge database with Telnyx webhook nodes...</span>
+</div>
+<div class="flex gap-4">
+<span class="text-slate-600">09:42:16</span>
+<span><span class="text-indigo-400">[SYSLOG]</span> Successfully pulled <span class="text-white">12 new block entries</span> from shared threat intelligence.</span>
+</div>
+<div class="flex gap-4">
+<span class="text-slate-600">09:42:20</span>
+<span><span class="text-warning text-yellow-500">[WARN]</span> Latency spike detected on US-EAST-1 node (124ms).</span>
+</div>
+<div class="flex gap-4">
+<span class="text-slate-600">09:42:25</span>
+<span><span class="text-emerald-400">[INFO]</span> Load balancer rerouting traffic to US-EAST-2. Operational.</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Background Decorative Visual -->
+<div class="fixed inset-0 pointer-events-none z-[-1] opacity-20">
+<div class="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-indigo-500/10 to-transparent blur-[120px]"></div>
+<div class="absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-tr from-indigo-900/10 to-transparent blur-[100px]"></div>
+</div>
+</body></html>

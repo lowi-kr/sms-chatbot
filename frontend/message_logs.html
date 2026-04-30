@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-low": "#131b2e",
+            "surface-tint": "#c0c1ff",
+            "secondary-container": "#39485a",
+            "on-primary-fixed-variant": "#2f2ebe",
+            "secondary-fixed-dim": "#b9c8de",
+            "on-secondary-fixed-variant": "#39485a",
+            "on-surface": "#dae2fd",
+            "primary-fixed": "#e1e0ff",
+            "primary": "#c0c1ff",
+            "on-primary-fixed": "#07006c",
+            "surface-container": "#171f33",
+            "on-secondary-container": "#a7b6cc",
+            "surface-variant": "#2d3449",
+            "on-tertiary-fixed": "#001e2f",
+            "on-background": "#dae2fd",
+            "secondary": "#b9c8de",
+            "tertiary": "#89ceff",
+            "surface-dim": "#0b1326",
+            "on-surface-variant": "#c7c4d7",
+            "error": "#ffb4ab",
+            "inverse-surface": "#dae2fd",
+            "outline-variant": "#464554",
+            "on-primary-container": "#0d0096",
+            "surface-bright": "#31394d",
+            "surface-container-high": "#222a3d",
+            "on-tertiary-fixed-variant": "#004c6e",
+            "on-error-container": "#ffdad6",
+            "surface-container-highest": "#2d3449",
+            "on-tertiary-container": "#002d43",
+            "inverse-on-surface": "#283044",
+            "on-tertiary": "#00344d",
+            "background": "#0b1326",
+            "tertiary-fixed-dim": "#89ceff",
+            "surface": "#0b1326",
+            "secondary-fixed": "#d4e4fa",
+            "outline": "#908fa0",
+            "inverse-primary": "#494bd6",
+            "tertiary-fixed": "#c9e6ff",
+            "on-primary": "#1000a9",
+            "on-secondary": "#233143",
+            "on-error": "#690005",
+            "tertiary-container": "#009ada",
+            "primary-fixed-dim": "#c0c1ff",
+            "on-secondary-fixed": "#0d1c2d",
+            "error-container": "#93000a",
+            "primary-container": "#8083ff",
+            "surface-container-lowest": "#060e20"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "lg": "24px",
+            "sidebar-width": "260px",
+            "base": "4px",
+            "xl": "32px",
+            "gutter": "20px",
+            "md": "16px",
+            "xs": "4px",
+            "sm": "8px",
+            "max-content-width": "1440px"
+          },
+          "fontFamily": {
+            "h2": ["Space Grotesk"],
+            "display": ["Space Grotesk"],
+            "body-lg": ["Inter"],
+            "label-caps": ["Inter"],
+            "body-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "h1": ["Space Grotesk"],
+            "code-sm": ["monospace"]
+          },
+          "fontSize": {
+            "h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "display": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "label-caps": ["11px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+            "body-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+            "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+            "h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "code-sm": ["13px", {"lineHeight": "1.6", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #0b1326;
+      color: #dae2fd;
+      font-family: 'Inter', sans-serif;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .status-glow-success {
+      box-shadow: 0 0 8px #89ceff;
+    }
+    .status-glow-error {
+      box-shadow: 0 0 8px #ffb4ab;
+    }
+  </style>
+</head>
+<body class="overflow-x-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-[260px] border-r border-slate-800 bg-slate-900 dark:bg-[#0F172A] flex flex-col h-full border-r border-slate-800 font-['Space_Grotesk'] tracking-tight z-50">
+<div class="p-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tighter text-slate-100 dark:text-white uppercase">SMS CORE</h1>
+<p class="text-[10px] text-slate-500 font-mono">v2.4.0-STABLE</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 mt-4">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/50" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-indigo-400 bg-indigo-500/10 border-r-2 border-indigo-500 font-medium" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<span class="font-body-md text-body-md">Message Logs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/50" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md text-body-md">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/50" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-body-md text-body-md">User Control</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/50" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">System Settings</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-800">
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-200 text-sm transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">code</span>
+<span>API Docs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-200 text-sm transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">contact_support</span>
+<span>Support</span>
+</a>
+</div>
+</aside>
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-260px)] h-16 border-b border-slate-800 bg-slate-950 dark:bg-[#020617] z-40 flex items-center justify-between px-6">
+<div class="flex items-center flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">search</span>
+<input class="w-full bg-slate-900 border border-slate-800 rounded-lg py-1.5 pl-10 pr-4 text-sm text-slate-300 focus:outline-none focus:border-indigo-500 transition-colors" placeholder="Search system logs..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-slate-500">
+<span class="material-symbols-outlined hover:text-slate-200 cursor-pointer text-sm">sensors</span>
+<span class="material-symbols-outlined hover:text-slate-200 cursor-pointer text-sm">cloud_done</span>
+<div class="relative">
+<span class="material-symbols-outlined hover:text-slate-200 cursor-pointer text-sm">notifications</span>
+<span class="absolute top-0 right-0 w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+</div>
+</div>
+<button class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded text-sm font-medium transition-all active:opacity-80">
+        Compose SMS
+      </button>
+<div class="flex items-center gap-3 border-l border-slate-800 pl-6">
+<div class="text-right">
+<p class="text-xs font-medium text-slate-200">Admin_Op_01</p>
+<p class="text-[10px] text-slate-500">Superuser</p>
+</div>
+<img alt="Operator Profile" class="w-8 h-8 rounded-full border border-slate-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZi8JgLFjNJ6gFZERHEgZYIyhB9mph_xBysLU6yOE4MAr2Ip9CA4hqi-5tk0OYVVOKX1GsL0tWAUfjFNcuBtxHCFkLNZudeFlSyoVRWqeC5M2kayAiuQ798iVVB8lHStmgFOhxG_Oxa9HrCdE5aExnrn0w2xYOlLqPDgbB1trbIgSX67TvGl4bjbYrH2Xc0_qEMdH376yikjJaXrJWuh1OqO7MiFGQycLOmXBYtiGCXjl_3EgYExk7_VMP-TFQHTbub788jQx6RJA"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-[260px] pt-16 min-h-screen p-gutter bg-surface">
+<div class="max-w-max-content-width mx-auto space-y-lg">
+<!-- Summary Bento Section -->
+<section class="grid grid-cols-12 gap-gutter">
+<div class="col-span-12 md:col-span-4 bg-surface-container border border-outline-variant p-lg rounded-xl relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl">bar_chart</span>
+</div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-sm">Peak Volume Today</h3>
+<div class="flex items-end gap-2">
+<p class="font-display text-display text-primary">14.2k</p>
+<span class="text-tertiary font-body-sm mb-2">+12% vs. avg</span>
+</div>
+<div class="mt-md h-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="w-3/4 h-full bg-primary"></div>
+</div>
+</div>
+<div class="col-span-12 md:col-span-4 bg-surface-container border border-outline-variant p-lg rounded-xl relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl">forum</span>
+</div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-sm">Total Active Threads</h3>
+<div class="flex items-end gap-2">
+<p class="font-display text-display text-tertiary">842</p>
+<div class="flex items-center gap-1 text-tertiary font-body-sm mb-2">
+<div class="w-2 h-2 rounded-full bg-tertiary status-glow-success"></div>
+<span>Live Now</span>
+</div>
+</div>
+<div class="mt-md flex gap-1">
+<div class="h-8 w-1 bg-tertiary/20 rounded-t"></div>
+<div class="h-6 w-1 bg-tertiary/40 rounded-t"></div>
+<div class="h-10 w-1 bg-tertiary rounded-t"></div>
+<div class="h-4 w-1 bg-tertiary/60 rounded-t"></div>
+<div class="h-12 w-1 bg-tertiary rounded-t"></div>
+<div class="h-9 w-1 bg-tertiary/50 rounded-t"></div>
+</div>
+</div>
+<div class="col-span-12 md:col-span-4 bg-surface-container border border-outline-variant p-lg rounded-xl relative overflow-hidden flex flex-col justify-between">
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-sm">System Health</h3>
+<p class="font-h1 text-h1 text-on-surface">99.98% <span class="text-body-sm font-normal text-on-surface-variant">Uptime</span></p>
+</div>
+<div class="flex items-center justify-between mt-md">
+<div class="text-body-sm text-on-surface-variant">
+<p>API Latency: <span class="font-code-sm text-primary">42ms</span></p>
+<p>Queue Size: <span class="font-code-sm text-primary">0</span></p>
+</div>
+<div class="w-12 h-12 bg-indigo-500/10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-indigo-400">check_circle</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Logs Table Section -->
+<section class="grid grid-cols-12 gap-gutter">
+<div class="col-span-12 lg:col-span-8 bg-surface-container border border-outline-variant rounded-xl overflow-hidden">
+<div class="px-lg py-md border-b border-outline-variant flex items-center justify-between">
+<h2 class="font-h2 text-h2 text-on-surface">Transmission Records</h2>
+<div class="flex gap-2">
+<button class="text-body-sm text-on-surface-variant bg-surface-variant px-3 py-1 rounded border border-outline hover:bg-secondary-container transition-colors">Export CSV</button>
+<button class="text-body-sm text-on-surface-variant bg-surface-variant px-3 py-1 rounded border border-outline hover:bg-secondary-container transition-colors">Filter</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="px-lg py-md font-label-caps text-label-caps text-on-surface-variant uppercase">Phone Number</th>
+<th class="px-lg py-md font-label-caps text-label-caps text-on-surface-variant uppercase">Name</th>
+<th class="px-lg py-md font-label-caps text-label-caps text-on-surface-variant uppercase text-right">Daily</th>
+<th class="px-lg py-md font-label-caps text-label-caps text-on-surface-variant uppercase text-right">Monthly</th>
+<th class="px-lg py-md font-label-caps text-label-caps text-on-surface-variant uppercase text-right">All-Time</th>
+<th class="px-lg py-md font-label-caps text-label-caps text-on-surface-variant uppercase text-center">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="px-lg py-md font-code-sm text-primary">+1 (555) 234-8890</td>
+<td class="px-lg py-md font-body-md text-on-surface">Eleanor Shellstrop</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">12</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">342</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">1,204</td>
+<td class="px-lg py-md">
+<div class="flex items-center justify-center gap-3">
+<button class="hover:text-primary transition-colors" title="Send SMS">
+<span class="material-symbols-outlined text-lg">send</span>
+</button>
+<button class="hover:text-error transition-colors" title="Block Number">
+<span class="material-symbols-outlined text-lg text-error/80">block</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="px-lg py-md font-code-sm text-primary">+44 20 7946 0128</td>
+<td class="px-lg py-md font-body-md text-on-surface">Chidi Anagonye</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">4</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">88</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">431</td>
+<td class="px-lg py-md">
+<div class="flex items-center justify-center gap-3">
+<button class="hover:text-primary transition-colors" title="Send SMS">
+<span class="material-symbols-outlined text-lg">send</span>
+</button>
+<button class="hover:text-error transition-colors" title="Block Number">
+<span class="material-symbols-outlined text-lg text-error/80">block</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="px-lg py-md font-code-sm text-primary">+1 (415) 555-0100</td>
+<td class="px-lg py-md font-body-md text-on-surface">Tahani Al-Jamil</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">42</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">1,120</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">8,902</td>
+<td class="px-lg py-md">
+<div class="flex items-center justify-center gap-3">
+<button class="hover:text-primary transition-colors" title="Send SMS">
+<span class="material-symbols-outlined text-lg">send</span>
+</button>
+<button class="hover:text-error transition-colors" title="Block Number">
+<span class="material-symbols-outlined text-lg text-error/80">block</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="px-lg py-md font-code-sm text-primary">+1 (510) 555-0921</td>
+<td class="px-lg py-md font-body-md text-on-surface">Jason Mendoza</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">0</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">12</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">56</td>
+<td class="px-lg py-md">
+<div class="flex items-center justify-center gap-3">
+<button class="hover:text-primary transition-colors" title="Send SMS">
+<span class="material-symbols-outlined text-lg">send</span>
+</button>
+<button class="hover:text-error transition-colors" title="Block Number">
+<span class="material-symbols-outlined text-lg text-error/80">block</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="px-lg py-md font-code-sm text-primary">+1 (323) 555-4432</td>
+<td class="px-lg py-md font-body-md text-on-surface">Michael Architect</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">156</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">4,521</td>
+<td class="px-lg py-md font-code-sm text-on-surface-variant text-right">24,310</td>
+<td class="px-lg py-md">
+<div class="flex items-center justify-center gap-3">
+<button class="hover:text-primary transition-colors" title="Send SMS">
+<span class="material-symbols-outlined text-lg">send</span>
+</button>
+<button class="hover:text-error transition-colors" title="Block Number">
+<span class="material-symbols-outlined text-lg text-error/80">block</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-md border-t border-outline-variant flex items-center justify-between text-body-sm text-on-surface-variant">
+<span>Showing 5 of 2,491 records</span>
+<div class="flex gap-4">
+<button class="hover:text-primary transition-colors">Previous</button>
+<button class="hover:text-primary transition-colors">Next</button>
+</div>
+</div>
+</div>
+<!-- Compose Side Interface (The "Sidebar" widget requested) -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-gutter">
+<div class="bg-surface-container border border-outline-variant rounded-xl p-lg h-full flex flex-col shadow-xl">
+<div class="flex items-center gap-3 mb-md">
+<span class="material-symbols-outlined text-primary">chat_bubble</span>
+<h2 class="font-h2 text-h2 text-on-surface">Compose Outgoing SMS</h2>
+</div>
+<div class="space-y-md flex-1">
+<div class="space-y-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase">Recipient Number</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">phone</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded py-2 pl-10 pr-4 text-sm text-primary focus:outline-none focus:border-primary transition-all font-code-sm" type="text" value="+1 (555) 234-8890"/>
+</div>
+</div>
+<div class="space-y-xs flex-1 flex flex-col">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase">Message Payload</label>
+<textarea class="w-full flex-1 min-h-[200px] bg-surface-container-lowest border border-outline-variant rounded p-4 text-sm text-on-surface focus:outline-none focus:border-primary transition-all resize-none font-body-md" placeholder="Enter SMS text here..."></textarea>
+<div class="flex justify-between mt-xs text-[10px] text-on-surface-variant font-mono">
+<span>UTF-8 ENCODED</span>
+<span>142 / 160 chars</span>
+</div>
+</div>
+<div class="pt-md">
+<button class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded font-medium flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">send</span>
+                  Transmit
+                </button>
+<p class="text-center text-[10px] text-on-surface-variant mt-md">Messages are subject to D1 Carrier Protocol compliance.</p>
+</div>
+</div>
+</div>
+<!-- Bottom Visual Context Card -->
+<div class="bg-surface-container border border-outline-variant rounded-xl overflow-hidden h-[180px] relative group">
+<div class="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent z-10"></div>
+<div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1551288049-bbb653240291?auto=format&amp;fit=crop&amp;q=80&amp;w=1200')] bg-cover bg-center group-hover:scale-110 transition-transform duration-500" data-alt="A dark, high-tech dashboard displaying glowing data visualizations and network maps across multiple large monitors. The lighting is dominated by deep blues and vibrant indigos, creating a focused, command-center atmosphere. Intricate digital nodes and glowing connections represent global SMS routing and message flow analytics in a sleek, minimalist style."></div>
+<div class="absolute bottom-0 left-0 p-md z-20">
+<h4 class="font-label-caps text-label-caps text-primary uppercase">Global Node Traffic</h4>
+<p class="font-body-sm text-on-surface">Monitoring 42 active edge nodes...</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Log Viewer (Syntax Highlighting Context) -->
+<section class="bg-black/40 border border-outline-variant rounded-xl p-lg relative group">
+<div class="flex items-center justify-between mb-md">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error status-glow-error"></span>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase">Real-time Stream Console</h3>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-on-surface transition-colors">content_copy</span>
+</div>
+<div class="font-code-sm text-on-surface-variant space-y-1">
+<p><span class="text-tertiary">[14:22:01.004]</span> <span class="text-primary">CORE_TRANS:</span> Initializing handshake with D1-US-WEST-01</p>
+<p><span class="text-tertiary">[14:22:01.012]</span> <span class="text-secondary">DEBUG:</span> Payload verified. Size: 142 bytes.</p>
+<p><span class="text-tertiary">[14:22:01.045]</span> <span class="text-primary">CORE_TRANS:</span> Message ID <span class="text-on-surface">msg_8842x9</span> accepted by gateway.</p>
+<p><span class="text-tertiary">[14:22:01.046]</span> <span class="text-surface-tint">SYSTEM:</span> Updating ledger for recipient +15552348890.</p>
+<p class="animate-pulse"><span class="text-tertiary">[14:22:03.992]</span> <span class="text-on-surface-variant cursor">_</span></p>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Hidden on desktop, shown on mobile as per design system pivot) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-slate-950 border-t border-slate-800 flex justify-around items-center h-16 z-50">
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px]">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-indigo-400" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<span class="text-[10px]">Logs</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[10px]">Stats</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px]">Config</span>
+</a>
+</nav>
+</body></html>
