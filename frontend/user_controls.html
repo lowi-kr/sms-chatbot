@@ -1,420 +1,317 @@
 <!DOCTYPE html>
-
-<html class="dark" lang="en"><head>
+<html lang="en" class="dark">
+<head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<style>
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    }
-  </style>
-<script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          "colors": {
-            "surface-container-low": "#131b2e",
-            "surface-tint": "#c0c1ff",
-            "secondary-container": "#39485a",
-            "on-primary-fixed-variant": "#2f2ebe",
-            "secondary-fixed-dim": "#b9c8de",
-            "on-secondary-fixed-variant": "#39485a",
-            "on-surface": "#dae2fd",
-            "primary-fixed": "#e1e0ff",
-            "primary": "#c0c1ff",
-            "on-primary-fixed": "#07006c",
-            "surface-container": "#171f33",
-            "on-secondary-container": "#a7b6cc",
-            "surface-variant": "#2d3449",
-            "on-tertiary-fixed": "#001e2f",
-            "on-background": "#dae2fd",
-            "secondary": "#b9c8de",
-            "tertiary": "#89ceff",
-            "surface-dim": "#0b1326",
-            "on-surface-variant": "#c7c4d7",
-            "error": "#ffb4ab",
-            "inverse-surface": "#dae2fd",
-            "outline-variant": "#464554",
-            "on-primary-container": "#0d0096",
-            "surface-bright": "#31394d",
-            "surface-container-high": "#222a3d",
-            "on-tertiary-fixed-variant": "#004c6e",
-            "on-error-container": "#ffdad6",
-            "surface-container-highest": "#2d3449",
-            "on-tertiary-container": "#002d43",
-            "inverse-on-surface": "#283044",
-            "on-tertiary": "#00344d",
-            "background": "#0b1326",
-            "tertiary-fixed-dim": "#89ceff",
-            "surface": "#0b1326",
-            "secondary-fixed": "#d4e4fa",
-            "outline": "#908fa0",
-            "inverse-primary": "#494bd6",
-            "tertiary-fixed": "#c9e6ff",
-            "on-primary": "#1000a9",
-            "on-secondary": "#233143",
-            "on-error": "#690005",
-            "tertiary-container": "#009ada",
-            "primary-fixed-dim": "#c0c1ff",
-            "on-secondary-fixed": "#0d1c2d",
-            "error-container": "#93000a",
-            "primary-container": "#8083ff",
-            "surface-container-lowest": "#060e20"
-          },
-          "borderRadius": {
-            "DEFAULT": "0.125rem",
-            "lg": "0.25rem",
-            "xl": "0.5rem",
-            "full": "0.75rem"
-          },
-          "spacing": {
-            "lg": "24px",
-            "sidebar-width": "260px",
-            "base": "4px",
-            "xl": "32px",
-            "gutter": "20px",
-            "md": "16px",
-            "xs": "4px",
-            "sm": "8px",
-            "max-content-width": "1440px"
-          },
-          "fontFamily": {
-            "h2": ["Space Grotesk"],
-            "display": ["Space Grotesk"],
-            "body-lg": ["Inter"],
-            "label-caps": ["Inter"],
-            "body-sm": ["Inter"],
-            "body-md": ["Inter"],
-            "h1": ["Space Grotesk"],
-            "code-sm": ["monospace"]
-          },
-          "fontSize": {
-            "h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
-            "display": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-            "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
-            "label-caps": ["11px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
-            "body-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
-            "body-md": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
-            "h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
-            "code-sm": ["13px", {"lineHeight": "1.6", "fontWeight": "400"}]
-          }
-        },
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SMS CORE — User Control</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: { extend: {
+      colors: {
+        bg:'#060c1a', surface:'#0d1628', border:'#1e2d4a',
+        accent:'#4f7cff', text:'#c8d8f8', muted:'#4a5980', success:'#22d3a5', error:'#ff5f7e',
       },
-    }
-  </script>
+      fontFamily: { mono:['JetBrains Mono','monospace'], sans:['Inter','sans-serif'], display:['Space Grotesk','sans-serif'] }
+    }}
+  }
+</script>
+<style>
+  * { box-sizing: border-box; }
+  body { background: #060c1a; color: #c8d8f8; font-family: 'Inter', sans-serif; margin: 0; }
+  .msym { font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24; line-height:1; vertical-align:middle; }
+  ::-webkit-scrollbar{width:6px;height:6px} ::-webkit-scrollbar-track{background:#060c1a} ::-webkit-scrollbar-thumb{background:#1e2d4a;border-radius:3px}
+  .sidebar { width:240px; background:#090f1e; border-right:1px solid #1e2d4a; display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; z-index:100; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:10px 16px; color:#4a5980; font-size:14px; font-weight:500; cursor:pointer; border-left:2px solid transparent; transition:all 0.15s; text-decoration:none; }
+  .nav-item:hover { color:#c8d8f8; background:rgba(79,124,255,0.05); }
+  .nav-item.active { color:#4f7cff; background:rgba(79,124,255,0.1); border-left-color:#4f7cff; }
+  .main { margin-left:240px; min-height:100vh; }
+  .topbar { height:56px; background:#090f1e; border-bottom:1px solid #1e2d4a; display:flex; align-items:center; padding:0 24px; gap:16px; position:sticky; top:0; z-index:50; }
+  .card { background:#0d1628; border:1px solid #1e2d4a; border-radius:12px; overflow:hidden; }
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; border:none; transition:all 0.15s; }
+  .btn-ghost { background:transparent; color:#4a5980; border:1px solid #1e2d4a; }
+  .btn-ghost:hover { color:#c8d8f8; border-color:#2d3f60; }
+  .btn-accent { background:#4f7cff; color:white; }
+  .btn-accent:hover { background:#6b93ff; }
+  .btn-danger { background:rgba(255,95,126,0.12); color:#ff5f7e; border:1px solid rgba(255,95,126,0.2); }
+  .btn-danger:hover { background:rgba(255,95,126,0.22); }
+  .btn-success { background:rgba(34,211,165,0.12); color:#22d3a5; border:1px solid rgba(34,211,165,0.2); }
+  .btn-success:hover { background:rgba(34,211,165,0.22); }
+  .btn-sm { padding:5px 10px; font-size:12px; gap:4px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  thead th { padding:11px 16px; text-align:left; font-size:10px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#4a5980; background:#090f1e; border-bottom:1px solid #1e2d4a; font-family:'JetBrains Mono',monospace; }
+  tbody tr { border-bottom:1px solid #111e35; transition:background 0.1s; }
+  tbody tr:hover { background:rgba(79,124,255,0.03); }
+  tbody td { padding:12px 16px; vertical-align:middle; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); z-index:200; display:flex; align-items:center; justify-content:center; padding:16px; }
+  .modal { background:#0d1628; border:1px solid #1e2d4a; border-radius:16px; padding:28px; width:100%; max-width:440px; box-shadow:0 24px 80px rgba(0,0,0,0.5); }
+  .modal-input { width:100%; background:#090f1e; border:1px solid #1e2d4a; color:#c8d8f8; border-radius:8px; padding:10px 14px; font-size:14px; outline:none; transition:border-color 0.2s; font-family:'JetBrains Mono',monospace; }
+  .modal-input:focus { border-color:#4f7cff; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .spin { animation:spin 0.8s linear infinite; display:inline-block; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:#22d3a5; animation:pulse 2s ease-in-out infinite; }
+  .stat-mini { background:#0d1628; border:1px solid #1e2d4a; border-radius:10px; padding:16px 20px; display:flex; align-items:center; gap:14px; }
+</style>
 </head>
-<body class="bg-background text-on-background font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
-<!-- SideNavBar Anchor -->
-<aside class="fixed left-0 top-0 h-full w-[260px] border-r border-slate-800 bg-slate-900 dark:bg-[#0F172A] flex flex-col font-['Space_Grotesk'] tracking-tight z-50">
-<div class="p-6">
-<div class="text-xl font-bold tracking-tighter text-slate-100 dark:text-white uppercase">SMS CORE</div>
-<div class="text-[10px] text-indigo-400 font-medium tracking-widest mt-1">v2.4.0-STABLE</div>
-</div>
-<nav class="flex-1 mt-4">
-<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/50" href="#">
-<span class="material-symbols-outlined text-[20px]">dashboard</span>
-<span class="text-sm">Dashboard</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/50" href="#">
-<span class="material-symbols-outlined text-[20px]">terminal</span>
-<span class="text-sm">Message Logs</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/50" href="#">
-<span class="material-symbols-outlined text-[20px]">analytics</span>
-<span class="text-sm">Analytics</span>
-</a>
-<!-- Active State for User Management / User Control -->
-<a class="flex items-center gap-3 px-4 py-3 text-indigo-400 bg-indigo-500/10 border-r-2 border-indigo-500 font-medium" href="#">
-<span class="material-symbols-outlined text-[20px]">security</span>
-<span class="text-sm">User Control</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/50" href="#">
-<span class="material-symbols-outlined text-[20px]">settings</span>
-<span class="text-sm">System Settings</span>
-</a>
-</nav>
-<div class="p-4 border-t border-slate-800">
-<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-200 text-sm transition-colors" href="#">
-<span class="material-symbols-outlined text-[18px]">code</span>
-<span>API Docs</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-200 text-sm transition-colors mt-2" href="#">
-<span class="material-symbols-outlined text-[18px]">contact_support</span>
-<span>Support</span>
-</a>
-<div class="mt-6 flex items-center gap-3 px-4">
-<div class="w-8 h-8 rounded bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
-<span class="material-symbols-outlined text-indigo-400 text-sm">person</span>
-</div>
-<div>
-<div class="text-xs font-semibold text-slate-200">OP-742</div>
-<div class="text-[10px] text-slate-500 uppercase">Administrator</div>
-</div>
-</div>
-</div>
+<body>
+<script src="config.js"></script>
+<script src="api.js"></script>
+
+<aside class="sidebar">
+  <div style="padding:20px 16px;border-bottom:1px solid #1e2d4a;margin-bottom:8px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;background:rgba(79,124,255,0.15);border:1px solid rgba(79,124,255,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center">
+        <span class="msym" style="color:#4f7cff;font-size:18px">terminal</span>
+      </div>
+      <div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#c8d8f8">SMS CORE</div>
+        <div style="font-size:10px;color:#4a5980;font-family:'JetBrains Mono',monospace">v2.4.0</div>
+      </div>
+    </div>
+  </div>
+  <nav style="flex:1;padding:4px 8px">
+    <a class="nav-item" href="index.html"><span class="msym">forum</span> Message Logs</a>
+    <a class="nav-item active" href="user_controls.html"><span class="msym">security</span> User Control</a>
+  </nav>
+  <div style="padding:12px 16px;border-top:1px solid #1e2d4a">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:rgba(79,124,255,0.05);border:1px solid #1e2d4a;margin-bottom:8px">
+      <div class="live-dot"></div>
+      <div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:#4a5980">TELNYX ONLINE</div>
+    </div>
+    <button onclick="api.logout()" class="nav-item" style="width:100%;background:none;border:none;text-align:left;border-radius:6px;color:#4a5980">
+      <span class="msym">logout</span> Sign Out
+    </button>
+  </div>
 </aside>
-<!-- TopAppBar Anchor -->
-<header class="fixed top-0 right-0 w-[calc(100%-260px)] h-16 border-b border-slate-800 bg-slate-950 dark:bg-[#020617] flex items-center justify-between px-6 z-40 font-['Space_Grotesk'] text-sm">
-<div class="flex items-center gap-8">
-<div class="relative">
-<span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-500">
-<span class="material-symbols-outlined text-[18px]">search</span>
-</span>
-<input class="bg-slate-900 border border-slate-800 text-slate-300 py-1.5 pl-10 pr-4 rounded w-64 focus:outline-none focus:border-indigo-500 transition-colors" placeholder="Search parameters..." type="text"/>
-</div>
-<div class="flex items-center gap-6">
-<div class="flex items-center gap-2">
-<span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
-<span class="text-[11px] font-semibold text-slate-400 tracking-wider">TELNYX CONNECTED</span>
-</div>
-<div class="flex items-center gap-2">
-<span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
-<span class="text-[11px] font-semibold text-slate-400 tracking-wider">D1 DATABASE SYNCED</span>
-</div>
-</div>
-</div>
-<div class="flex items-center gap-4">
-<div class="flex items-center gap-2 px-3 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20 text-indigo-400 cursor-pointer hover:bg-indigo-500/20 transition-all">
-<span class="material-symbols-outlined text-[18px]">sensors</span>
-<span class="text-[11px] font-bold">LIVE FEED</span>
-</div>
-<div class="flex items-center gap-3 border-l border-slate-800 pl-4 ml-2">
-<span class="material-symbols-outlined text-slate-500 hover:text-slate-200 cursor-pointer transition-colors">notifications</span>
-<button class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded font-medium text-[12px] transition-colors">
-          Compose SMS
-        </button>
-</div>
-</div>
-</header>
-<!-- Main Content Canvas -->
-<main class="ml-[260px] pt-24 p-8 min-h-screen">
-<div class="max-w-[1440px] mx-auto">
-<div class="mb-10 flex items-end justify-between">
-<div>
-<h1 class="font-h1 text-h1 text-on-surface">User Management</h1>
-<p class="text-on-surface-variant text-body-sm mt-1">Configure global access control policies and endpoint filtering rules.</p>
-</div>
-<div class="flex gap-3">
-<button class="bg-surface-container-high border border-outline-variant px-4 py-2 rounded text-body-sm text-on-surface flex items-center gap-2 hover:bg-surface-variant transition-colors">
-<span class="material-symbols-outlined text-[18px]">download</span>
-            Export Audit Logs
+
+<div class="main">
+  <div class="topbar">
+    <div style="flex:1">
+      <h1 style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;margin:0">User Control</h1>
+      <p style="font-size:12px;color:#4a5980;margin:0">Manage access control — whitelist & blacklist</p>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="loadAll()" id="refresh-btn">
+      <span class="msym" id="refresh-icon">refresh</span> Refresh
+    </button>
+  </div>
+
+  <div style="padding:24px;display:flex;flex-direction:column;gap:20px">
+
+    <!-- Stats mini row -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px" id="mini-stats">
+      <div class="stat-mini"><span class="msym" style="color:#ff5f7e;font-size:22px">block</span><div><div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#ff5f7e" id="bl-count">—</div><div style="font-size:11px;color:#4a5980">Blacklisted</div></div></div>
+      <div class="stat-mini"><span class="msym" style="color:#4f7cff;font-size:22px">verified</span><div><div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#4f7cff" id="wl-count">—</div><div style="font-size:11px;color:#4a5980">Whitelisted</div></div></div>
+      <div class="stat-mini" style="border-color:rgba(255,191,36,0.2);background:rgba(251,191,36,0.04)">
+        <span class="msym" style="color:#fbbf24;font-size:22px">info</span>
+        <div style="font-size:12px;color:#fbbf24;line-height:1.5">
+          <strong>Whitelist mode:</strong> if any entries exist, <em>only</em> those numbers can use the bot.
+        </div>
+      </div>
+    </div>
+
+    <!-- Split tables -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+      <!-- Blacklist -->
+      <div class="card">
+        <div style="padding:14px 18px;border-bottom:1px solid #1e2d4a;display:flex;align-items:center;gap:10px">
+          <span class="msym" style="color:#ff5f7e">block</span>
+          <h2 style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin:0;flex:1">Blacklist</h2>
+          <span style="font-size:10px;font-family:'JetBrains Mono',monospace;background:rgba(255,95,126,0.12);color:#ff5f7e;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,95,126,0.2)">BLOCKED</span>
+          <button class="btn btn-danger btn-sm" onclick="openAddModal('blacklist')">
+            <span class="msym" style="font-size:16px">add</span> Add
           </button>
-<button class="bg-primary text-on-primary px-4 py-2 rounded text-body-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity">
-<span class="material-symbols-outlined text-[18px]">add</span>
-            Add Entry
+        </div>
+        <div style="max-height:480px;overflow-y:auto">
+          <table>
+            <thead><tr>
+              <th>Phone Number</th>
+              <th>Reason</th>
+              <th>Added</th>
+              <th style="text-align:center">Remove</th>
+            </tr></thead>
+            <tbody id="bl-body"><tr><td colspan="4" style="text-align:center;padding:40px;color:#4a5980">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div style="padding:10px 16px;border-top:1px solid #1e2d4a">
+          <input id="bl-search" placeholder="Search blacklist..." oninput="filterBl()"
+            style="width:100%;background:#090f1e;border:1px solid #1e2d4a;color:#c8d8f8;border-radius:6px;padding:7px 12px;font-size:12px;outline:none;font-family:inherit"/>
+        </div>
+      </div>
+
+      <!-- Whitelist -->
+      <div class="card">
+        <div style="padding:14px 18px;border-bottom:1px solid #1e2d4a;display:flex;align-items:center;gap:10px">
+          <span class="msym" style="color:#4f7cff">verified</span>
+          <h2 style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin:0;flex:1">Whitelist</h2>
+          <span style="font-size:10px;font-family:'JetBrains Mono',monospace;background:rgba(79,124,255,0.12);color:#4f7cff;padding:3px 8px;border-radius:999px;border:1px solid rgba(79,124,255,0.2)">PRIORITY</span>
+          <button class="btn btn-accent btn-sm" onclick="openAddModal('whitelist')">
+            <span class="msym" style="font-size:16px">add</span> Add
           </button>
+        </div>
+        <div style="max-height:480px;overflow-y:auto">
+          <table>
+            <thead><tr>
+              <th>Phone Number</th>
+              <th>Label</th>
+              <th>Added</th>
+              <th style="text-align:center">Remove</th>
+            </tr></thead>
+            <tbody id="wl-body"><tr><td colspan="4" style="text-align:center;padding:40px;color:#4a5980">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div style="padding:10px 16px;border-top:1px solid #1e2d4a">
+          <input id="wl-search" placeholder="Search whitelist..." oninput="filterWl()"
+            style="width:100%;background:#090f1e;border:1px solid #1e2d4a;color:#c8d8f8;border-radius:6px;padding:7px 12px;font-size:12px;outline:none;font-family:inherit"/>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
+
+<!-- Add Entry Modal -->
+<div id="add-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeAddModal()">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h3 id="add-modal-title" style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;margin:0"></h3>
+      <button onclick="closeAddModal()" style="background:none;border:none;color:#4a5980;cursor:pointer"><span class="msym">close</span></button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#4a5980;margin-bottom:6px;font-family:'JetBrains Mono',monospace">Phone Number (E.164 format)</label>
+        <input id="add-phone" class="modal-input" placeholder="+15551234567" />
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#4a5980;margin-bottom:6px;font-family:'JetBrains Mono',monospace" id="add-label-label">Label / Reason</label>
+        <input id="add-label" class="modal-input" placeholder="e.g. My personal number" style="font-family:'Inter',sans-serif"/>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+        <button class="btn btn-ghost" onclick="closeAddModal()">Cancel</button>
+        <button class="btn btn-accent" id="add-confirm-btn" onclick="submitAdd()">Add Entry</button>
+      </div>
+    </div>
+  </div>
 </div>
-<!-- Bento-style Statistics Grid -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-8">
-<div class="bg-surface-container border border-outline-variant p-5 rounded-xl">
-<div class="text-label-caps text-slate-500 mb-1">TOTAL BLACKLISTED</div>
-<div class="text-display text-white">2,841</div>
-<div class="mt-4 flex items-center gap-2 text-error text-[12px]">
-<span class="material-symbols-outlined text-[16px]">trending_up</span>
-<span>+12% vs last month</span>
-</div>
-</div>
-<div class="bg-surface-container border border-outline-variant p-5 rounded-xl">
-<div class="text-label-caps text-slate-500 mb-1">WHITELISTED ENTITIES</div>
-<div class="text-display text-white">152</div>
-<div class="mt-4 flex items-center gap-2 text-indigo-400 text-[12px]">
-<span class="material-symbols-outlined text-[16px]">verified_user</span>
-<span>Policy: Strict Access</span>
-</div>
-</div>
-<div class="bg-surface-container border border-outline-variant p-5 rounded-xl">
-<div class="text-label-caps text-slate-500 mb-1">SMS THROUGHPUT</div>
-<div class="text-display text-white">48.2k</div>
-<div class="mt-4 flex items-center gap-2 text-emerald-400 text-[12px]">
-<span class="material-symbols-outlined text-[16px]">speed</span>
-<span>Latency: 84ms AVG</span>
-</div>
-</div>
-<div class="bg-surface-container border border-outline-variant p-5 rounded-xl overflow-hidden relative">
-<div class="text-label-caps text-slate-500 mb-1">SECURITY ALERT LEVEL</div>
-<div class="text-display text-indigo-400">NOMINAL</div>
-<div class="absolute -right-4 -bottom-4 opacity-10">
-<span class="material-symbols-outlined text-[120px]">shield</span>
-</div>
-</div>
-</div>
-<!-- Split View Tables -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
-<!-- Whitelist Section -->
-<div class="bg-surface-container border border-outline-variant rounded-xl flex flex-col overflow-hidden">
-<div class="p-4 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-indigo-400">verified</span>
-<h2 class="font-h2 text-h2 text-white">Whitelist</h2>
-</div>
-<span class="text-[11px] font-mono bg-indigo-500/10 text-indigo-400 px-2 py-1 rounded">PRIORITY_ACCESS</span>
-</div>
-<div class="overflow-x-auto">
-<table class="w-full text-left border-collapse">
-<thead>
-<tr class="text-label-caps text-slate-500 border-b border-outline-variant bg-slate-900/40">
-<th class="px-6 py-3">Phone Number</th>
-<th class="px-6 py-3">Label</th>
-<th class="px-6 py-3">Date Added</th>
-<th class="px-6 py-3 text-right">Actions</th>
-</tr>
-</thead>
-<tbody class="text-body-sm text-on-surface">
-<tr class="border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
-<td class="px-6 py-4 font-mono text-indigo-300">+1 (555) 012-3456</td>
-<td class="px-6 py-4">
-<span class="px-2 py-0.5 rounded bg-surface-variant text-[11px] font-medium border border-outline-variant">SYSTEM_ADMIN</span>
-</td>
-<td class="px-6 py-4 text-slate-400">2023-10-12</td>
-<td class="px-6 py-4 text-right">
-<button class="text-indigo-400 hover:text-indigo-300 font-medium text-[12px] flex items-center gap-1 ml-auto">
-<span class="material-symbols-outlined text-[16px]">person_remove</span>
-                      Remove
-                    </button>
-</td>
-</tr>
-<tr class="border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
-<td class="px-6 py-4 font-mono text-indigo-300">+1 (555) 987-6543</td>
-<td class="px-6 py-4">
-<span class="px-2 py-0.5 rounded bg-surface-variant text-[11px] font-medium border border-outline-variant">CORE_DEV_TEAM</span>
-</td>
-<td class="px-6 py-4 text-slate-400">2023-11-04</td>
-<td class="px-6 py-4 text-right">
-<button class="text-indigo-400 hover:text-indigo-300 font-medium text-[12px] flex items-center gap-1 ml-auto">
-<span class="material-symbols-outlined text-[16px]">person_remove</span>
-                      Remove
-                    </button>
-</td>
-</tr>
-<tr class="border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
-<td class="px-6 py-4 font-mono text-indigo-300">+44 20 7946 0958</td>
-<td class="px-6 py-4">
-<span class="px-2 py-0.5 rounded bg-surface-variant text-[11px] font-medium border border-outline-variant">UK_OFFICE_BOT</span>
-</td>
-<td class="px-6 py-4 text-slate-400">2023-12-01</td>
-<td class="px-6 py-4 text-right">
-<button class="text-indigo-400 hover:text-indigo-300 font-medium text-[12px] flex items-center gap-1 ml-auto">
-<span class="material-symbols-outlined text-[16px]">person_remove</span>
-                      Remove
-                    </button>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="p-4 bg-surface-container-low border-t border-outline-variant">
-<a class="text-[12px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-2" href="#">
-              View all 152 whitelist entries <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
-</a>
-</div>
-</div>
-<!-- Blacklist Section -->
-<div class="bg-surface-container border border-outline-variant rounded-xl flex flex-col overflow-hidden">
-<div class="p-4 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-error">block</span>
-<h2 class="font-h2 text-h2 text-white">Blacklist</h2>
-</div>
-<span class="text-[11px] font-mono bg-error/10 text-error px-2 py-1 rounded">TRAFFIC_FILTER_ON</span>
-</div>
-<div class="overflow-x-auto">
-<table class="w-full text-left border-collapse">
-<thead>
-<tr class="text-label-caps text-slate-500 border-b border-outline-variant bg-slate-900/40">
-<th class="px-6 py-3">Phone Number</th>
-<th class="px-6 py-3">Reason</th>
-<th class="px-6 py-3">Date Added</th>
-<th class="px-6 py-3 text-right">Actions</th>
-</tr>
-</thead>
-<tbody class="text-body-sm text-on-surface">
-<tr class="border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
-<td class="px-6 py-4 font-mono text-error/80">+1 (555) 666-0666</td>
-<td class="px-6 py-4 text-slate-300">Repeated Spam Attempt</td>
-<td class="px-6 py-4 text-slate-400">2024-01-15</td>
-<td class="px-6 py-4 text-right">
-<button class="bg-error/10 text-error px-3 py-1 rounded border border-error/20 hover:bg-error/20 transition-all font-medium text-[11px]">
-                      Unblock
-                    </button>
-</td>
-</tr>
-<tr class="border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
-<td class="px-6 py-4 font-mono text-error/80">+1 (555) 777-1212</td>
-<td class="px-6 py-4 text-slate-300">Phishing Pattern Detected</td>
-<td class="px-6 py-4 text-slate-400">2024-01-18</td>
-<td class="px-6 py-4 text-right">
-<button class="bg-error/10 text-error px-3 py-1 rounded border border-error/20 hover:bg-error/20 transition-all font-medium text-[11px]">
-                      Unblock
-                    </button>
-</td>
-</tr>
-<tr class="border-b border-outline-variant/30 hover:bg-surface-variant/30 transition-colors">
-<td class="px-6 py-4 font-mono text-error/80">+86 10 6543 2109</td>
-<td class="px-6 py-4 text-slate-300">Malformed SMS Payload</td>
-<td class="px-6 py-4 text-slate-400">2024-01-20</td>
-<td class="px-6 py-4 text-right">
-<button class="bg-error/10 text-error px-3 py-1 rounded border border-error/20 hover:bg-error/20 transition-all font-medium text-[11px]">
-                      Unblock
-                    </button>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="p-4 bg-surface-container-low border-t border-outline-variant">
-<a class="text-[12px] text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-2" href="#">
-              View all 2,841 blacklist entries <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
-</a>
-</div>
-</div>
-</div>
-<!-- System Logic Overlay Preview (Minimalist Corporate Detail) -->
-<div class="mt-8 bg-[#0F172A] border border-slate-800 rounded-xl p-6">
-<div class="flex items-center justify-between mb-4">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-indigo-400">terminal</span>
-<span class="font-h2 text-h2 text-white">Filter Logic Log</span>
-</div>
-<div class="flex gap-2">
-<span class="w-3 h-3 rounded-full bg-slate-800"></span>
-<span class="w-3 h-3 rounded-full bg-slate-800"></span>
-<span class="w-3 h-3 rounded-full bg-slate-800"></span>
-</div>
-</div>
-<div class="font-mono text-code-sm text-indigo-300 bg-slate-950 p-4 rounded border border-slate-900 overflow-hidden leading-relaxed">
-<div class="flex gap-4">
-<span class="text-slate-600">09:42:12</span>
-<span><span class="text-emerald-400">[INFO]</span> Executing rule set: global_filtering_v2.0</span>
-</div>
-<div class="flex gap-4">
-<span class="text-slate-600">09:42:15</span>
-<span><span class="text-indigo-400">[SYSLOG]</span> Syncing D1 edge database with Telnyx webhook nodes...</span>
-</div>
-<div class="flex gap-4">
-<span class="text-slate-600">09:42:16</span>
-<span><span class="text-indigo-400">[SYSLOG]</span> Successfully pulled <span class="text-white">12 new block entries</span> from shared threat intelligence.</span>
-</div>
-<div class="flex gap-4">
-<span class="text-slate-600">09:42:20</span>
-<span><span class="text-warning text-yellow-500">[WARN]</span> Latency spike detected on US-EAST-1 node (124ms).</span>
-</div>
-<div class="flex gap-4">
-<span class="text-slate-600">09:42:25</span>
-<span><span class="text-emerald-400">[INFO]</span> Load balancer rerouting traffic to US-EAST-2. Operational.</span>
-</div>
-</div>
-</div>
-</div>
-</main>
-<!-- Background Decorative Visual -->
-<div class="fixed inset-0 pointer-events-none z-[-1] opacity-20">
-<div class="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-indigo-500/10 to-transparent blur-[120px]"></div>
-<div class="absolute bottom-0 left-0 w-1/3 h-1/3 bg-gradient-to-tr from-indigo-900/10 to-transparent blur-[100px]"></div>
-</div>
-</body></html>
+
+<script>
+  if (!requireAuth()) throw new Error('Auth required');
+
+  let blData = [], wlData = [];
+  let addingTo = 'blacklist';
+
+  async function loadAll() {
+    const icon = document.getElementById('refresh-icon');
+    icon.classList.add('spin');
+    try {
+      const [bl, wl, stats] = await Promise.all([api.blacklist(), api.whitelist(), api.stats()]);
+      blData = bl; wlData = wl;
+      document.getElementById('bl-count').textContent = bl.length.toLocaleString();
+      document.getElementById('wl-count').textContent = wl.length.toLocaleString();
+      renderBl(blData); renderWl(wlData);
+    } catch (e) { showToast('Load failed: ' + e.message, 'error'); }
+    finally { icon.classList.remove('spin'); }
+  }
+
+  function filterBl() {
+    const q = document.getElementById('bl-search').value.toLowerCase();
+    renderBl(blData.filter(r => r.phone_number.toLowerCase().includes(q) || (r.reason||'').toLowerCase().includes(q)));
+  }
+
+  function filterWl() {
+    const q = document.getElementById('wl-search').value.toLowerCase();
+    renderWl(wlData.filter(r => r.phone_number.toLowerCase().includes(q) || (r.label||'').toLowerCase().includes(q)));
+  }
+
+  function renderBl(rows) {
+    const tbody = document.getElementById('bl-body');
+    if (!rows.length) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:32px;color:#4a5980">No entries</td></tr>`; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td><span style="font-family:'JetBrains Mono',monospace;color:#ff5f7e;font-size:12px">${r.phone_number}</span></td>
+        <td style="color:#4a5980;font-size:12px">${r.reason || '—'}</td>
+        <td style="color:#4a5980;font-size:11px;font-family:'JetBrains Mono',monospace">${fmtDate(r.created_at)}</td>
+        <td style="text-align:center">
+          <button class="btn btn-success btn-sm" onclick="removeBlacklist('${r.phone_number}')">
+            <span class="msym" style="font-size:14px">lock_open</span> Unblock
+          </button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function renderWl(rows) {
+    const tbody = document.getElementById('wl-body');
+    if (!rows.length) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:32px;color:#4a5980">No entries — all numbers allowed</td></tr>`; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td><span style="font-family:'JetBrains Mono',monospace;color:#4f7cff;font-size:12px">${r.phone_number}</span></td>
+        <td style="color:#4a5980;font-size:12px">${r.label || '—'}</td>
+        <td style="color:#4a5980;font-size:11px;font-family:'JetBrains Mono',monospace">${fmtDate(r.created_at)}</td>
+        <td style="text-align:center">
+          <button class="btn btn-danger btn-sm" onclick="removeWhitelist('${r.phone_number}')">
+            <span class="msym" style="font-size:14px">person_remove</span> Remove
+          </button>
+        </td>
+      </tr>`).join('');
+  }
+
+  // Add modal
+  function openAddModal(list) {
+    addingTo = list;
+    document.getElementById('add-modal-title').textContent = list === 'blacklist' ? '🚫 Add to Blacklist' : '✅ Add to Whitelist';
+    document.getElementById('add-label-label').textContent = list === 'blacklist' ? 'Reason (optional)' : 'Label (optional)';
+    document.getElementById('add-phone').value = '';
+    document.getElementById('add-label').value = '';
+    document.getElementById('add-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('add-phone').focus(), 50);
+  }
+
+  function closeAddModal() { document.getElementById('add-modal').style.display = 'none'; }
+
+  async function submitAdd() {
+    const phone = document.getElementById('add-phone').value.trim();
+    const label = document.getElementById('add-label').value.trim();
+    if (!phone) { showToast('Enter a phone number', 'error'); return; }
+    const btn = document.getElementById('add-confirm-btn');
+    btn.disabled = true; btn.textContent = 'Adding...';
+    try {
+      if (addingTo === 'blacklist') await api.addBlacklist(phone, label);
+      else await api.addWhitelist(phone, label);
+      showToast(`Added to ${addingTo}`, 'success');
+      closeAddModal();
+      loadAll();
+    } catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    finally { btn.disabled = false; btn.textContent = 'Add Entry'; }
+  }
+
+  async function removeBlacklist(phone) {
+    showConfirm(`Remove <strong style="color:#ff5f7e;font-family:'JetBrains Mono',monospace">${phone}</strong> from blacklist?`, async () => {
+      try { await api.removeBlacklist(phone); showToast('Removed from blacklist', 'success'); loadAll(); }
+      catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    });
+  }
+
+  async function removeWhitelist(phone) {
+    showConfirm(`Remove <strong style="color:#4f7cff;font-family:'JetBrains Mono',monospace">${phone}</strong> from whitelist?`, async () => {
+      try { await api.removeWhitelist(phone); showToast('Removed from whitelist', 'success'); loadAll(); }
+      catch (e) { showToast('Failed: ' + e.message, 'error'); }
+    });
+  }
+
+  function fmtDate(dt) {
+    if (!dt) return '—';
+    return new Date(dt + 'Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  // Enter key in add modal
+  document.getElementById('add-label').addEventListener('keydown', e => { if (e.key === 'Enter') submitAdd(); });
+  document.getElementById('add-phone').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('add-label').focus(); });
+
+  loadAll();
+</script>
+</body>
+</html>
