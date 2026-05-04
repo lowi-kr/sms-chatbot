@@ -16,6 +16,8 @@ export async function handleCommand(command, args, phoneNumber, db) {
       return await cmdLoad(phoneNumber, args, db);
     case '/delete':
       return await cmdDelete(phoneNumber, args, db);
+    case '/support':
+      return await cmdSupport(phoneNumber, args, db);
     case '/help':
       return cmdHelp();
     default:
@@ -33,13 +35,11 @@ export function parseCommand(text) {
 }
 
 async function cmdNew(phoneNumber, db) {
-  // Deactivate current active conversation
   await db.prepare(
     `UPDATE conversations SET is_active = 0, updated_at = CURRENT_TIMESTAMP 
      WHERE phone_number = ? AND is_active = 1`
   ).bind(phoneNumber).run();
 
-  // Create new conversation
   const name = `Conversation ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
   const result = await db.prepare(
     `INSERT INTO conversations (phone_number, name, is_active) VALUES (?, ?, 1)`
@@ -61,7 +61,6 @@ async function cmdSave(phoneNumber, name, db) {
 }
 
 async function cmdRename(phoneNumber, args, db) {
-  // Format: /rename [id] [new name] or /rename [new name] (renames current)
   const parts = args.split(' ');
   const firstWord = parts[0];
   const isId = /^\d+$/.test(firstWord);
@@ -79,7 +78,6 @@ async function cmdRename(phoneNumber, args, db) {
     if (result.meta.changes === 0) return `Conversation #${id} not found.`;
     return `✅ Renamed to "${name}"`;
   } else {
-    // Rename current conversation
     const name = args;
     if (!name) return `Please provide a name. Example: /rename My Chat`;
 
@@ -119,25 +117,21 @@ async function cmdLoad(phoneNumber, args, db) {
   const id = parseInt(args);
   if (!id) return `Please provide a conversation ID. Example: /load 3\nText /list to see your conversations.`;
 
-  // Check conversation exists and belongs to this user
   const conv = await db.prepare(
     `SELECT id, name FROM conversations WHERE id = ? AND phone_number = ?`
   ).bind(id, phoneNumber).first();
 
   if (!conv) return `Conversation #${id} not found. Text /list to see your conversations.`;
 
-  // Deactivate current
   await db.prepare(
     `UPDATE conversations SET is_active = 0, updated_at = CURRENT_TIMESTAMP 
      WHERE phone_number = ? AND is_active = 1`
   ).bind(phoneNumber).run();
 
-  // Activate selected
   await db.prepare(
     `UPDATE conversations SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
   ).bind(id).run();
 
-  // Get message count
   const { count } = await db.prepare(
     `SELECT COUNT(*) as count FROM messages WHERE conversation_id = ?`
   ).bind(id).first();
@@ -155,17 +149,27 @@ async function cmdDelete(phoneNumber, args, db) {
 
   if (!conv) return `Conversation #${id} not found.`;
 
-  // Delete messages first
   await db.prepare(`DELETE FROM messages WHERE conversation_id = ?`).bind(id).run();
   await db.prepare(`DELETE FROM conversations WHERE id = ?`).bind(id).run();
 
-  // If it was active, create a new one
   if (conv.is_active) {
     await cmdNew(phoneNumber, db);
     return `🗑️ Deleted "${conv.name}" and started a new conversation.`;
   }
 
   return `🗑️ Deleted "${conv.name}".`;
+}
+
+async function cmdSupport(phoneNumber, args, db) {
+  if (!args || !args.trim()) {
+    return `Please include your message. Example: /support I can't load my conversation`;
+  }
+
+  await db.prepare(
+    `INSERT INTO support_tickets (phone_number, message, status) VALUES (?, ?, 'open')`
+  ).bind(phoneNumber, args.trim()).run();
+
+  return `✅ Your message has been received by the support team. We'll get back to you shortly!`;
 }
 
 function cmdHelp() {
@@ -178,6 +182,7 @@ function cmdHelp() {
 /list — See all your conversations
 /load [id] — Switch to a conversation
 /delete [id] — Delete a conversation
+/support [message] — Contact support
 /help — Show this message
 
 Just text normally to chat with AI!`;
