@@ -37,3 +37,18 @@ CREATE TABLE IF NOT EXISTS blacklist (
 CREATE INDEX IF NOT EXISTS idx_conversations_phone ON conversations(phone_number);
 CREATE INDEX IF NOT EXISTS idx_conversations_active ON conversations(phone_number, is_active);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
+
+-- Add this to your existing schema.sql
+-- Run: wrangler d1 execute sms-chatbot-db --remote --file=schema_addition.sql
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  phone_number TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'closed')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  closed_at DATETIME
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_status ON support_tickets(status);
+CREATE INDEX IF NOT EXISTS idx_support_phone ON support_tickets(phone_number);
