@@ -98,7 +98,7 @@ async function processMessage(env, phoneNumber, text) {
     // 7. Save user message
     await saveMessage(db, conversation.id, 'user', text);
 
-    // 8. Log user message to Google Sheets
+    // 8. Log user message to Google Sheets (no model/tokens for inbound user messages)
     await logToSheets(env, {
       phoneNumber,
       conversationName: conversation.name,
@@ -106,28 +106,40 @@ async function processMessage(env, phoneNumber, text) {
       message: text,
     });
 
-    // 9. Get AI response (via OpenRouter)
-    let aiResponse;
+    // 9. Get AI response (via OpenRouter, with per-number model/limit/fallback resolution)
+    let result;
     try {
-      aiResponse = await getOpenRouterResponse(env, history, text);
+      result = await getOpenRouterResponse(env, phoneNumber, history, text);
     } catch (err) {
       console.error('OpenRouter error:', err);
-      aiResponse = "Sorry, I'm having trouble thinking right now. Please try again in a moment!";
+      result = {
+        text: "Sorry, I'm having trouble thinking right now. Please try again in a moment!",
+        modelUsed: null,
+        inputTokens: 0,
+        outputTokens: 0,
+        blocked: false,
+      };
     }
 
-    // 10. Save AI response
-    await saveMessage(db, conversation.id, 'assistant', aiResponse);
+    // 10. Save AI response (only persist to conversation history if not a limit-block message,
+    //     so blocked notices don't pollute the actual chat context)
+    if (!result.blocked) {
+      await saveMessage(db, conversation.id, 'assistant', result.text);
+    }
 
-    // 11. Log AI response to Google Sheets
+    // 11. Log AI response to Google Sheets (with model + token usage)
     await logToSheets(env, {
       phoneNumber,
       conversationName: conversation.name,
       role: 'assistant',
-      message: aiResponse,
+      message: result.text,
+      modelUsed: result.modelUsed,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
     });
 
     // 12. Send response via SMS
-    await sendSMS(env, phoneNumber, aiResponse);
+    await sendSMS(env, phoneNumber, result.text);
 
   } catch (err) {
     console.error('Error processing message:', err);
