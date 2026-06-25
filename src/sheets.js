@@ -57,7 +57,8 @@ async function getAccessToken(env) {
   return tokenData.access_token;
 }
 
-export async function logToSheets(env, { phoneNumber, conversationName, role, message }) {
+// Columns: Timestamp | Phone Number | Conversation | Role | Message Length (chars) | Model Used | Input Tokens | Output Tokens
+export async function logToSheets(env, { phoneNumber, conversationName, role, message, modelUsed, inputTokens, outputTokens }) {
   try {
     if (!env.GOOGLE_SHEETS_ID || !env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !env.GOOGLE_PRIVATE_KEY) {
       console.log('Google Sheets not configured, skipping log');
@@ -72,7 +73,7 @@ export async function logToSheets(env, { phoneNumber, conversationName, role, me
     const messageLength = message.length;
 
     const response = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Logs!A:E:append?valueInputOption=USER_ENTERED`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Logs!A:H:append?valueInputOption=USER_ENTERED`,
       {
         method: 'POST',
         headers: {
@@ -80,7 +81,16 @@ export async function logToSheets(env, { phoneNumber, conversationName, role, me
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          values: [[timestamp, phoneNumber, conversationName, role, messageLength]],
+          values: [[
+            timestamp,
+            phoneNumber,
+            conversationName,
+            role,
+            messageLength,
+            modelUsed || '',
+            inputTokens ?? '',
+            outputTokens ?? '',
+          ]],
         }),
       }
     );
@@ -106,7 +116,7 @@ export async function initializeSheet(env) {
     const sheetId = env.GOOGLE_SHEETS_ID;
 
     await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Logs!A1:E1?valueInputOption=USER_ENTERED`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Logs!A1:H1?valueInputOption=USER_ENTERED`,
       {
         method: 'PUT',
         headers: {
@@ -114,7 +124,7 @@ export async function initializeSheet(env) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          values: [['Timestamp', 'Phone Number', 'Conversation', 'Role', 'Message Length (chars)']],
+          values: [['Timestamp', 'Phone Number', 'Conversation', 'Role', 'Message Length (chars)', 'Model Used', 'Input Tokens', 'Output Tokens']],
         }),
       }
     );
@@ -132,9 +142,10 @@ export async function logFilteredMessage(env, { phoneNumber, message }) {
     const timestamp = new Date().toISOString();
     const sheetId = env.GOOGLE_SHEETS_ID;
 
-    // First append the row
+    // First append the row (FILTERED rows keep the original 5-column shape; the extra
+    // model/token columns are simply left blank for these rows)
     const appendResponse = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Logs!A:E:append?valueInputOption=USER_ENTERED&includeValuesInResponse=true`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Logs!A:H:append?valueInputOption=USER_ENTERED&includeValuesInResponse=true`,
       {
         method: 'POST',
         headers: {
@@ -142,7 +153,7 @@ export async function logFilteredMessage(env, { phoneNumber, message }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          values: [[timestamp, phoneNumber, 'FILTERED', '⚠️ BLOCKED', message]],
+          values: [[timestamp, phoneNumber, 'FILTERED', '⚠️ BLOCKED', message, '', '', '']],
         }),
       }
     );
@@ -153,7 +164,7 @@ export async function logFilteredMessage(env, { phoneNumber, message }) {
     const updatedRange = appendData.updates?.updatedRange;
     if (!updatedRange) return;
 
-    // Extract row number from range like "Logs!A15:E15"
+    // Extract row number from range like "Logs!A15:H15"
     const rowMatch = updatedRange.match(/(\d+)$/);
     if (!rowMatch) return;
     const rowNumber = parseInt(rowMatch[1]);
@@ -186,7 +197,7 @@ export async function logFilteredMessage(env, { phoneNumber, message }) {
                 startRowIndex: rowNumber - 1,
                 endRowIndex: rowNumber,
                 startColumnIndex: 0,
-                endColumnIndex: 5,
+                endColumnIndex: 8,
               },
               cell: {
                 userEnteredFormat: {
