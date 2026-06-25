@@ -1,18 +1,25 @@
 // index.js - Main Cloudflare Worker entry point
-// TEST MODE: set env.TEST_MODE = "true" (as a Cloudflare variable, not secret) to
-// log AI replies instead of sending them via Telnyx. No phone number or Telnyx
-// account is touched when TEST_MODE is on.
+// TEST MODE: set env.TEST_MODE = "true" (Cloudflare variable, not secret) to log
+// AI replies instead of sending via Telnyx, and to enable /test and /test-ui routes.
+// Nothing related to testing touches Telnyx or requires a phone number.
 
 import { parseInboundWebhook, sendSMS } from './telnyx.js';
 import { parseCommand, handleCommand } from './commands.js';
 import { containsBlockedContent } from './filter.js';
 import { getOpenRouterResponse } from './openrouter.js';
 import { logToSheets, logFilteredMessage } from './sheets.js';
+import { TEST_PAGE_HTML } from './testpage.js';
 import {
   isBlacklisted, isWhitelisted, hasWhitelistEntries,
   getOrCreateActiveConversation, getConversationHistory,
   saveMessage
 } from './db.js';
+
+const TEST_CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
 // Swaps out the real Telnyx send for a console log when TEST_MODE is enabled.
 async function deliverReply(env, phoneNumber, message) {
@@ -32,17 +39,33 @@ export default {
       return new Response('OK', { status: 200 });
     }
 
-    // Test endpoint: lets you POST { "from": "+1...", "text": "hello" } directly,
-    // skipping even the Telnyx payload shape. Only active when TEST_MODE is "true".
-    if (url.pathname === '/test' && request.method === 'POST' && env.TEST_MODE === 'true') {
+    // Standalone test UI — only served when TEST_MODE is on. No auth, no dashboard.
+    if (url.pathname === '/test-ui' && request.method === 'GET') {
+      if (env.TEST_MODE !== 'true') {
+        return new Response('Test UI is disabled. Set TEST_MODE=true on this worker to enable it.', { status: 404 });
+      }
+      return new Response(TEST_PAGE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }
+
+    // CORS preflight for the test API (harmless to leave enabled even outside TEST_MODE)
+    if (url.pathname === '/test' && request.method === 'OPTIONS') {
+      return new Response(null, { headers: TEST_CORS_HEADERS });
+    }
+
+    // Test endpoint: POST { "from": "+1...", "text": "hello" } directly,
+    // skipping the Telnyx payload shape entirely. Only active when TEST_MODE is "true".
+    if (url.pathname === '/test' && request.method === 'POST') {
+      if (env.TEST_MODE !== 'true') {
+        return new Response('Test endpoint is disabled. Set TEST_MODE=true on this worker to enable it.', { status: 404 });
+      }
       const body = await request.json().catch(() => ({}));
       if (!body.from || !body.text) {
-        return new Response('Body must include "from" and "text"', { status: 400 });
+        return new Response('Body must include "from" and "text"', { status: 400, headers: TEST_CORS_HEADERS });
       }
       // Run synchronously (not waitUntil) so the HTTP response includes the result.
       const result = await processMessage(env, body.from, body.text, true);
       return new Response(JSON.stringify(result, null, 2), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...TEST_CORS_HEADERS, 'Content-Type': 'application/json' },
       });
     }
 
