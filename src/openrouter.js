@@ -33,7 +33,9 @@ async function callOpenRouter(env, model, messages) {
 }
 
 // Returns { text, modelUsed, inputTokens, outputTokens, blocked }
-export async function getOpenRouterResponse(env, phoneNumber, conversationHistory, userMessage) {
+// overrideModel: if provided (e.g. from the test console picker), skips D1 resolution
+// for the primary model and uses this directly. Fallback/limit logic still applies.
+export async function getOpenRouterResponse(env, phoneNumber, conversationHistory, userMessage, overrideModel = null) {
   const db = env.DB;
   const config = await getEffectiveConfig(db, phoneNumber);
 
@@ -47,7 +49,7 @@ export async function getOpenRouterResponse(env, phoneNumber, conversationHistor
   ];
 
   // If already over the lifetime token limit, decide block vs fallback up front.
-  let modelToUse = config.model || DEFAULT_MODEL;
+  let modelToUse = overrideModel || config.model || DEFAULT_MODEL;
   let usingFallback = false;
 
   if (config.isOverLimit) {
