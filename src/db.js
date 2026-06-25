@@ -1,7 +1,5 @@
 // db.js - Database helper functions
 
-import { encryptMessage, decryptMessage } from './crypto.js';
-
 export async function isBlacklisted(db, phoneNumber) {
   const result = await db.prepare(
     `SELECT id FROM blacklist WHERE phone_number = ?`
@@ -24,10 +22,12 @@ export async function hasWhitelistEntries(db) {
 }
 
 export async function getOrCreateActiveConversation(db, phoneNumber) {
+  // Try to get existing active conversation
   let conv = await db.prepare(
     `SELECT id, name FROM conversations WHERE phone_number = ? AND is_active = 1`
   ).bind(phoneNumber).first();
 
+  // Create one if none exists
   if (!conv) {
     const name = `Conversation ${new Date().toLocaleDateString('en-US', {
       month: 'short', day: 'numeric',
@@ -43,47 +43,21 @@ export async function getOrCreateActiveConversation(db, phoneNumber) {
   return conv;
 }
 
-/**
- * Get conversation history, decrypting each message.
- * Messages that fail to decrypt are skipped with a warning.
- * encryptionKey is env.ENCRYPTION_KEY
- */
-export async function getConversationHistory(db, conversationId, phoneNumber, encryptionKey) {
+export async function getConversationHistory(db, conversationId) {
   const { results } = await db.prepare(
     `SELECT role, content FROM messages 
      WHERE conversation_id = ? 
      ORDER BY created_at ASC`
   ).bind(conversationId).all();
-
-  if (!results || results.length === 0) return [];
-
-  // Decrypt all messages in parallel
-  const decrypted = await Promise.all(
-    results.map(async (msg) => {
-      const plaintext = await decryptMessage(phoneNumber, msg.content, encryptionKey);
-      if (plaintext === null) {
-        // Skip messages that can't be decrypted (shouldn't happen in normal flow)
-        console.warn(`Failed to decrypt message in conversation ${conversationId}`);
-        return null;
-      }
-      return { role: msg.role, content: plaintext };
-    })
-  );
-
-  return decrypted.filter(Boolean);
+  return results || [];
 }
 
-/**
- * Save a message, encrypting the content before storing.
- * encryptionKey is env.ENCRYPTION_KEY
- */
-export async function saveMessage(db, conversationId, role, content, phoneNumber, encryptionKey) {
-  const encrypted = await encryptMessage(phoneNumber, content, encryptionKey);
-
+export async function saveMessage(db, conversationId, role, content) {
   await db.prepare(
     `INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)`
-  ).bind(conversationId, role, encrypted).run();
+  ).bind(conversationId, role, content).run();
 
+  // Update conversation timestamp
   await db.prepare(
     `UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?`
   ).bind(conversationId).run();
@@ -111,4 +85,18 @@ export async function removeFromBlacklist(db, phoneNumber) {
   await db.prepare(
     `DELETE FROM blacklist WHERE phone_number = ?`
   ).bind(phoneNumber).run();
+}
+
+export async function getSetting(db, key, defaultValue = null) {
+  const result = await db.prepare(
+    `SELECT value FROM settings WHERE key = ?`
+  ).bind(key).first();
+  return result ? result.value : defaultValue;
+}
+
+export async function setSetting(db, key, value) {
+  await db.prepare(
+    `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP`
+  ).bind(key, value).run();
 }
