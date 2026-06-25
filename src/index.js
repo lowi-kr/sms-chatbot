@@ -1,4 +1,7 @@
 // index.js - Main Cloudflare Worker entry point
+// TEST MODE: set env.TEST_MODE = "true" (as a Cloudflare variable, not secret) to
+// log AI replies instead of sending them via Telnyx. No phone number or Telnyx
+// account is touched when TEST_MODE is on.
 
 import { parseInboundWebhook, sendSMS } from './telnyx.js';
 import { parseCommand, handleCommand } from './commands.js';
@@ -11,6 +14,15 @@ import {
   saveMessage
 } from './db.js';
 
+// Swaps out the real Telnyx send for a console log when TEST_MODE is enabled.
+async function deliverReply(env, phoneNumber, message) {
+  if (env.TEST_MODE === 'true') {
+    console.log(`[TEST_MODE] Would send to ${phoneNumber}:\n${message}`);
+    return;
+  }
+  await sendSMS(env, phoneNumber, message);
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -18,6 +30,20 @@ export default {
     // Health check endpoint
     if (url.pathname === '/health') {
       return new Response('OK', { status: 200 });
+    }
+
+    // Test endpoint: lets you POST { "from": "+1...", "text": "hello" } directly,
+    // skipping even the Telnyx payload shape. Only active when TEST_MODE is "true".
+    if (url.pathname === '/test' && request.method === 'POST' && env.TEST_MODE === 'true') {
+      const body = await request.json().catch(() => ({}));
+      if (!body.from || !body.text) {
+        return new Response('Body must include "from" and "text"', { status: 400 });
+      }
+      // Run synchronously (not waitUntil) so the HTTP response includes the result.
+      const result = await processMessage(env, body.from, body.text, true);
+      return new Response(JSON.stringify(result, null, 2), {
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Only handle POST to /webhook
@@ -52,29 +78,31 @@ export default {
   },
 };
 
-async function processMessage(env, phoneNumber, text) {
+// returnResult: when true, returns a summary object instead of just logging (used by /test)
+async function processMessage(env, phoneNumber, text, returnResult = false) {
   try {
     const db = env.DB;
 
     // 1. Check blacklist
     if (await isBlacklisted(db, phoneNumber)) {
       console.log(`Blocked message from blacklisted number: ${phoneNumber}`);
-      return;
+      return returnResult ? { status: 'blacklisted' } : undefined;
     }
 
     // 2. Check whitelist (only enforced if whitelist has entries)
     const whitelistActive = await hasWhitelistEntries(db);
     if (whitelistActive && !(await isWhitelisted(db, phoneNumber))) {
-      await sendSMS(env, phoneNumber, "Sorry, this chatbot is private. You don't have access.");
-      return;
+      const msg = "Sorry, this chatbot is private. You don't have access.";
+      await deliverReply(env, phoneNumber, msg);
+      return returnResult ? { status: 'not_whitelisted', reply: msg } : undefined;
     }
 
     // 3. Handle slash commands
     const parsed = parseCommand(text);
     if (parsed) {
       const response = await handleCommand(parsed.command, parsed.args, phoneNumber, db);
-      await sendSMS(env, phoneNumber, response);
-      return;
+      await deliverReply(env, phoneNumber, response);
+      return returnResult ? { status: 'command', reply: response } : undefined;
     }
 
     // 4. Content filter check
@@ -83,10 +111,9 @@ async function processMessage(env, phoneNumber, text) {
           phoneNumber,
           message: text,
        });
-       await sendSMS(env, phoneNumber,
-         "Sorry, I can't respond to that kind of message. Please keep our conversation appropriate."
-       );
-       return;
+       const msg = "Sorry, I can't respond to that kind of message. Please keep our conversation appropriate.";
+       await deliverReply(env, phoneNumber, msg);
+       return returnResult ? { status: 'filtered', reply: msg } : undefined;
     }
 
     // 5. Get or create active conversation
@@ -138,15 +165,20 @@ async function processMessage(env, phoneNumber, text) {
       outputTokens: result.outputTokens,
     });
 
-    // 12. Send response via SMS
-    await sendSMS(env, phoneNumber, result.text);
+    // 12. Deliver response (real SMS, or console log in TEST_MODE)
+    await deliverReply(env, phoneNumber, result.text);
+
+    return returnResult ? { status: 'ok', reply: result.text, modelUsed: result.modelUsed, inputTokens: result.inputTokens, outputTokens: result.outputTokens } : undefined;
 
   } catch (err) {
     console.error('Error processing message:', err);
     try {
-      await sendSMS(env, phoneNumber, "Something went wrong on my end. Please try again!");
+      const msg = "Something went wrong on my end. Please try again!";
+      await deliverReply(env, phoneNumber, msg);
+      return returnResult ? { status: 'error', error: err.message } : undefined;
     } catch (sendErr) {
       console.error('Failed to send error message:', sendErr);
+      return returnResult ? { status: 'error', error: err.message, sendError: sendErr.message } : undefined;
     }
   }
 }
