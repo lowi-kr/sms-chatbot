@@ -39,7 +39,7 @@ export const TEST_PAGE_HTML = `<!DOCTYPE html>
   /* Model picker */
   .model-picker { position: relative; }
   .model-picker-trigger { display: flex; align-items: center; justify-content: space-between; cursor: pointer; gap: 8px; }
-  .model-picker-trigger span.chev { color: #4a5980; font-size: 11px; }
+  .model-picker-trigger span.chev { color: #4a5980; font-size: 25px; }
   .model-dropdown { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: #0d1628; border: 1px solid #2d3f60; border-radius: 10px; box-shadow: 0 16px 40px rgba(0,0,0,0.5); z-index: 30; display: none; max-height: 320px; overflow: hidden; flex-direction: column; }
   .model-dropdown.open { display: flex; }
   .model-search { border: none; border-bottom: 1px solid #1e2d4a; border-radius: 0; background: #090f1e; }
