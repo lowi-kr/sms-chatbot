@@ -63,7 +63,7 @@ export default {
         return new Response('Body must include "from" and "text"', { status: 400, headers: TEST_CORS_HEADERS });
       }
       // Run synchronously (not waitUntil) so the HTTP response includes the result.
-      const result = await processMessage(env, body.from, body.text, true);
+      const result = await processMessage(env, body.from, body.text, true, body.model || null);
       return new Response(JSON.stringify(result, null, 2), {
         headers: { ...TEST_CORS_HEADERS, 'Content-Type': 'application/json' },
       });
@@ -102,7 +102,8 @@ export default {
 };
 
 // returnResult: when true, returns a summary object instead of just logging (used by /test)
-async function processMessage(env, phoneNumber, text, returnResult = false) {
+// modelOverride: when set (test console picker), forces this model instead of D1-resolved default
+async function processMessage(env, phoneNumber, text, returnResult = false, modelOverride = null) {
   try {
     const db = env.DB;
 
@@ -159,7 +160,7 @@ async function processMessage(env, phoneNumber, text, returnResult = false) {
     // 9. Get AI response (via OpenRouter, with per-number model/limit/fallback resolution)
     let result;
     try {
-      result = await getOpenRouterResponse(env, phoneNumber, history, text);
+      result = await getOpenRouterResponse(env, phoneNumber, history, text, modelOverride);
     } catch (err) {
       console.error('OpenRouter error:', err);
       result = {
