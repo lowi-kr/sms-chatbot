@@ -52,7 +52,7 @@ async function cmdSave(phoneNumber, name, db) {
   if (!name) return `Please provide a name. Example: /save My Recipe Chat`;
 
   const result = await db.prepare(
-    `UPDATE conversations SET name = ?, updated_at = CURRENT_TIMESTAMP 
+    `UPDATE conversations SET name = ?, is_named = 1, updated_at = CURRENT_TIMESTAMP 
      WHERE phone_number = ? AND is_active = 1`
   ).bind(name, phoneNumber).run();
 
@@ -71,7 +71,7 @@ async function cmdRename(phoneNumber, args, db) {
     if (!name) return `Please provide a new name. Example: /rename ${id} My Chat`;
 
     const result = await db.prepare(
-      `UPDATE conversations SET name = ?, updated_at = CURRENT_TIMESTAMP 
+      `UPDATE conversations SET name = ?, is_named = 1, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ? AND phone_number = ?`
     ).bind(name, id, phoneNumber).run();
 
@@ -82,7 +82,7 @@ async function cmdRename(phoneNumber, args, db) {
     if (!name) return `Please provide a name. Example: /rename My Chat`;
 
     const result = await db.prepare(
-      `UPDATE conversations SET name = ?, updated_at = CURRENT_TIMESTAMP 
+      `UPDATE conversations SET name = ?, is_named = 1, updated_at = CURRENT_TIMESTAMP 
        WHERE phone_number = ? AND is_active = 1`
     ).bind(name, phoneNumber).run();
 

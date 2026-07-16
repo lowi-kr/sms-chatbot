@@ -6,13 +6,14 @@
 import { parseInboundWebhook, sendSMS } from './telnyx.js';
 import { parseCommand, handleCommand } from './commands.js';
 import { containsBlockedContent } from './filter.js';
-import { getOpenRouterResponse } from './openrouter.js';
+import { getOpenRouterResponse, generateConversationTitle } from './openrouter.js';
 import { logToSheets, logFilteredMessage } from './sheets.js';
 import { TEST_PAGE_HTML } from './testpage.js';
 import {
   isBlacklisted, isWhitelisted, hasWhitelistEntries,
   getOrCreateActiveConversation, getConversationHistory,
-  saveMessage
+  saveMessage, getConversationMeta, markConversationNamed,
+  getSetting
 } from './db.js';
 
 const TEST_CORS_HEADERS = {
@@ -20,6 +21,9 @@ const TEST_CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
+
+const DEFAULT_NAMING_MODEL = 'meta-llama/llama-3.1-8b-instruct:free';
+const NAMING_MESSAGE_THRESHOLD = 4; // 2 user+assistant pairs (4 total messages)
 
 // Swaps out the real Telnyx send for a console log when TEST_MODE is enabled.
 async function deliverReply(env, phoneNumber, message) {
@@ -63,7 +67,7 @@ export default {
         return new Response('Body must include "from" and "text"', { status: 400, headers: TEST_CORS_HEADERS });
       }
       // Run synchronously (not waitUntil) so the HTTP response includes the result.
-      const result = await processMessage(env, body.from, body.text, true, body.model || null);
+      const result = await processMessage(env, ctx, body.from, body.text, true, body.model || null);
       return new Response(JSON.stringify(result, null, 2), {
         headers: { ...TEST_CORS_HEADERS, 'Content-Type': 'application/json' },
       });
@@ -95,7 +99,7 @@ export default {
     const { from: phoneNumber, text } = msg;
 
     // Process in background so we return 200 to Telnyx quickly
-    ctx.waitUntil(processMessage(env, phoneNumber, text));
+    ctx.waitUntil(processMessage(env, ctx, phoneNumber, text));
 
     return new Response('OK', { status: 200 });
   },
@@ -103,7 +107,7 @@ export default {
 
 // returnResult: when true, returns a summary object instead of just logging (used by /test)
 // modelOverride: when set (test console picker), forces this model instead of D1-resolved default
-async function processMessage(env, phoneNumber, text, returnResult = false, modelOverride = null) {
+async function processMessage(env, ctx, phoneNumber, text, returnResult = false, modelOverride = null) {
   try {
     const db = env.DB;
 
@@ -176,6 +180,12 @@ async function processMessage(env, phoneNumber, text, returnResult = false, mode
     //     so blocked notices don't pollute the actual chat context)
     if (!result.blocked) {
       await saveMessage(db, conversation.id, 'assistant', result.text);
+
+      // 10b. Trigger auto-naming (non-blocking) once the conversation has crossed the
+      //      message threshold, if it hasn't been named yet (auto or manual).
+      //      history.length is the count *before* this exchange; +2 accounts for the
+      //      user message and assistant reply just saved.
+      ctx.waitUntil(maybeAutoNameConversation(env, conversation.id, history.length + 2));
     }
 
     // 11. Log AI response to Google Sheets (with model + token usage)
@@ -204,5 +214,30 @@ async function processMessage(env, phoneNumber, text, returnResult = false, mode
       console.error('Failed to send error message:', sendErr);
       return returnResult ? { status: 'error', error: err.message, sendError: sendErr.message } : undefined;
     }
+  }
+}
+
+// Fires a lightweight title-generation call once a conversation crosses the message
+// threshold, only if it hasn't been named yet (auto or manual). Dispatched via
+// ctx.waitUntil so it never blocks or delays the reply path. Best-effort: any
+// failure here is logged and swallowed, never surfaced to the user.
+async function maybeAutoNameConversation(env, conversationId, messageCount) {
+  try {
+    if (messageCount < NAMING_MESSAGE_THRESHOLD) return;
+
+    const db = env.DB;
+    const meta = await getConversationMeta(db, conversationId);
+    if (!meta || meta.is_named) return; // already named (auto or manual) — skip
+
+    const fullHistory = await getConversationHistory(db, conversationId);
+    if (fullHistory.length < NAMING_MESSAGE_THRESHOLD) return; // safety re-check
+
+    const namingModel = await getSetting(db, 'naming_model', DEFAULT_NAMING_MODEL);
+    const title = await generateConversationTitle(env, namingModel, fullHistory);
+    if (!title) return;
+
+    await markConversationNamed(db, conversationId, title);
+  } catch (err) {
+    console.error('Auto-naming error:', err.message);
   }
 }

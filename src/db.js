@@ -194,3 +194,19 @@ export async function getAllNumberSettings(db) {
   ).all();
   return results || [];
 }
+
+// ---------------------------------------------------------------
+// Auto-naming support
+// ---------------------------------------------------------------
+
+export async function getConversationMeta(db, conversationId) {
+  return await db.prepare(
+    `SELECT id, name, is_named FROM conversations WHERE id = ?`
+  ).bind(conversationId).first();
+}
+
+export async function markConversationNamed(db, conversationId, name) {
+  await db.prepare(
+    `UPDATE conversations SET name = ?, is_named = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+  ).bind(name, conversationId).run();
+}

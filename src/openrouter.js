@@ -113,3 +113,40 @@ export async function getOpenRouterResponse(env, phoneNumber, conversationHistor
     blocked: false,
   };
 }
+
+// ---------------------------------------------------------------
+// Conversation auto-naming
+// ---------------------------------------------------------------
+// Separate, lightweight call — deliberately does NOT reuse getOpenRouterResponse,
+// since that function's fallback/limit/token-tracking logic doesn't apply here.
+// Naming never counts against a user's chat token limit, and always uses the
+// admin-configured naming model regardless of that number's chat model override.
+
+const NAMING_SYSTEM_PROMPT = `Generate a short, specific 3-5 word title summarizing this conversation. Respond with ONLY the title text — no quotes, no ending punctuation, no preamble, no explanation.`;
+
+export async function generateConversationTitle(env, namingModel, conversationHistory) {
+  // Only the first few messages are needed for a title — keeps this fast and cheap.
+  const excerpt = conversationHistory.slice(0, 6).map(msg => ({
+    role: msg.role === 'assistant' ? 'assistant' : 'user',
+    content: msg.content,
+  }));
+
+  if (!excerpt.length) return null;
+
+  const messages = [
+    { role: 'system', content: NAMING_SYSTEM_PROMPT },
+    ...excerpt,
+  ];
+
+  const data = await callOpenRouter(env, namingModel, messages);
+  const choice = data.choices?.[0];
+  let title = choice?.message?.content?.trim() || null;
+  if (!title) return null;
+
+  // Strip surrounding quotes some models add anyway, and hard-cap length for the D1 column.
+  title = title.replace(/^["'“”]+|["'“”]+$/g, '').trim();
+  if (!title) return null;
+  if (title.length > 60) title = title.substring(0, 57) + '...';
+
+  return title;
+}
