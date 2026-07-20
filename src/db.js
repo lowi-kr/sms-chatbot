@@ -210,3 +210,44 @@ export async function markConversationNamed(db, conversationId, name) {
     `UPDATE conversations SET name = ?, is_named = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
   ).bind(name, conversationId).run();
 }
+
+// ---------------------------------------------------------------
+// Per-number encrypted memory (durable facts)
+// ---------------------------------------------------------------
+// NOTE: db.js never sees ENCRYPTION_KEY and never decrypts anything — encryption/
+// decryption of encrypted_facts happens only in the caller (index.js / openrouter.js),
+// same boundary that already exists for the messages table. This keeps the crypto
+// logic in exactly one place (crypto.js) and means the admin API (which has no
+// ENCRYPTION_KEY at all) is structurally unable to read memory content.
+
+// Returns { phone_number, encrypted_facts, last_extracted_message_count } or null.
+export async function getMemoryRow(db, phoneNumber) {
+  const row = await db.prepare(
+    `SELECT phone_number, encrypted_facts, last_extracted_message_count FROM memory WHERE phone_number = ?`
+  ).bind(phoneNumber).first();
+  return row || null;
+}
+
+export async function saveMemoryRow(db, phoneNumber, encryptedFacts, lastExtractedMessageCount) {
+  await db.prepare(
+    `INSERT INTO memory (phone_number, encrypted_facts, last_extracted_message_count, updated_at)
+     VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+     ON CONFLICT(phone_number) DO UPDATE SET
+       encrypted_facts = excluded.encrypted_facts,
+       last_extracted_message_count = excluded.last_extracted_message_count,
+       updated_at = CURRENT_TIMESTAMP`
+  ).bind(phoneNumber, encryptedFacts, lastExtractedMessageCount).run();
+}
+
+// Admin-facing: metadata only (counts/timestamps), never decrypted content.
+// Safe to expose via admin-api since the admin worker never holds ENCRYPTION_KEY.
+export async function getMemoryMeta(db, phoneNumber) {
+  const row = await db.prepare(
+    `SELECT last_extracted_message_count, updated_at FROM memory WHERE phone_number = ?`
+  ).bind(phoneNumber).first();
+  return row || null;
+}
+
+export async function deleteMemory(db, phoneNumber) {
+  await db.prepare(`DELETE FROM memory WHERE phone_number = ?`).bind(phoneNumber).run();
+}

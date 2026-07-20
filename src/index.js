@@ -6,14 +6,15 @@
 import { parseInboundWebhook, sendSMS } from './telnyx.js';
 import { parseCommand, handleCommand } from './commands.js';
 import { containsBlockedContent } from './filter.js';
-import { getOpenRouterResponse, generateConversationTitle } from './openrouter.js';
+import { getOpenRouterResponse, generateConversationTitle, extractMemory } from './openrouter.js';
 import { logToSheets, logFilteredMessage } from './sheets.js';
 import { TEST_PAGE_HTML } from './testpage.js';
+import { encryptMessage, decryptMessage } from './crypto.js';
 import {
   isBlacklisted, isWhitelisted, hasWhitelistEntries,
   getOrCreateActiveConversation, getConversationHistory,
   saveMessage, getConversationMeta, markConversationNamed,
-  getSetting
+  getSetting, getMemoryRow, saveMemoryRow
 } from './db.js';
 
 const TEST_CORS_HEADERS = {
@@ -24,6 +25,9 @@ const TEST_CORS_HEADERS = {
 
 const DEFAULT_NAMING_MODEL = 'meta-llama/llama-3.1-8b-instruct:free';
 const NAMING_MESSAGE_THRESHOLD = 4; // 2 user+assistant pairs (4 total messages)
+
+const DEFAULT_MEMORY_MODEL = 'meta-llama/llama-3.1-8b-instruct:free';
+const DEFAULT_MEMORY_THRESHOLD = 10; // extract once this many new messages accumulate
 
 // Swaps out the real Telnyx send for a console log when TEST_MODE is enabled.
 async function deliverReply(env, phoneNumber, message) {
@@ -161,10 +165,25 @@ async function processMessage(env, ctx, phoneNumber, text, returnResult = false,
       message: text,
     });
 
+    // 8b. Fetch and decrypt any stored memory for this number (best-effort; never
+    //     blocks the reply path — if anything here fails, we just proceed without memory).
+    let memoryFacts = null;
+    if (env.ENCRYPTION_KEY) {
+      try {
+        const memRow = await getMemoryRow(db, phoneNumber);
+        if (memRow?.encrypted_facts) {
+          const decrypted = await decryptMessage(phoneNumber, memRow.encrypted_facts, env.ENCRYPTION_KEY, 'memory');
+          if (decrypted) memoryFacts = JSON.parse(decrypted);
+        }
+      } catch (err) {
+        console.error('Memory fetch/decrypt error:', err.message);
+      }
+    }
+
     // 9. Get AI response (via OpenRouter, with per-number model/limit/fallback resolution)
     let result;
     try {
-      result = await getOpenRouterResponse(env, phoneNumber, history, text, modelOverride);
+      result = await getOpenRouterResponse(env, phoneNumber, history, text, modelOverride, memoryFacts);
     } catch (err) {
       console.error('OpenRouter error:', err);
       result = {
@@ -186,6 +205,10 @@ async function processMessage(env, ctx, phoneNumber, text, returnResult = false,
       //      history.length is the count *before* this exchange; +2 accounts for the
       //      user message and assistant reply just saved.
       ctx.waitUntil(maybeAutoNameConversation(env, conversation.id, history.length + 2));
+
+      // 10c. Trigger memory extraction (non-blocking) once enough new messages have
+      //      accumulated since the last extraction for this phone number.
+      ctx.waitUntil(maybeExtractMemory(env, phoneNumber, conversation.id));
     }
 
     // 11. Log AI response to Google Sheets (with model + token usage)
@@ -239,5 +262,45 @@ async function maybeAutoNameConversation(env, conversationId, messageCount) {
     await markConversationNamed(db, conversationId, title);
   } catch (err) {
     console.error('Auto-naming error:', err.message);
+  }
+}
+
+// Fires memory extraction once enough new messages have accumulated since the last
+// extraction for this phone number. Fire-and-forget via ctx.waitUntil, same pattern
+// as auto-naming. Failures are logged and swallowed — memory is best-effort, never
+// something a user-facing reply should depend on or be blocked by.
+//
+// Re-summarizes the FULL conversation history each time (merging with any existing
+// facts via the extraction prompt) rather than only the new tail. Simpler and
+// self-correcting; costs a bit more tokens per extraction but these are cheap/free
+// models and extraction only fires every N messages.
+async function maybeExtractMemory(env, phoneNumber, conversationId) {
+  try {
+    if (!env.ENCRYPTION_KEY) return; // no pepper configured — nothing to encrypt with, skip entirely
+
+    const db = env.DB;
+    const fullHistory = await getConversationHistory(db, conversationId);
+    const memRow = await getMemoryRow(db, phoneNumber);
+    const lastCount = memRow?.last_extracted_message_count || 0;
+
+    const thresholdRaw = await getSetting(db, 'memory_extraction_threshold', String(DEFAULT_MEMORY_THRESHOLD));
+    const threshold = parseInt(thresholdRaw, 10) || DEFAULT_MEMORY_THRESHOLD;
+
+    if (fullHistory.length - lastCount < threshold) return;
+
+    let existingFacts = null;
+    if (memRow?.encrypted_facts) {
+      const decrypted = await decryptMessage(phoneNumber, memRow.encrypted_facts, env.ENCRYPTION_KEY, 'memory');
+      if (decrypted) existingFacts = JSON.parse(decrypted);
+    }
+
+    const memoryModel = await getSetting(db, 'memory_model', DEFAULT_MEMORY_MODEL);
+    const newFacts = await extractMemory(env, memoryModel, fullHistory, existingFacts);
+    if (newFacts === null) return; // extraction failed — don't overwrite existing memory or bump the counter
+
+    const encrypted = await encryptMessage(phoneNumber, JSON.stringify(newFacts), env.ENCRYPTION_KEY, 'memory');
+    await saveMemoryRow(db, phoneNumber, encrypted, fullHistory.length);
+  } catch (err) {
+    console.error('Memory extraction error:', err.message);
   }
 }
