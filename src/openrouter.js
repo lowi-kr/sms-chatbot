@@ -1,7 +1,7 @@
 // openrouter.js - OpenRouter API integration (OpenAI-compatible)
 // Handles per-number model selection, token-limit enforcement, and fallback.
 
-import { SYSTEM_PROMPT } from './filter.js';
+import { buildSystemPrompt } from './filter.js';
 import { getEffectiveConfig, recordTokenUsage } from './db.js';
 
 const DEFAULT_MODEL = 'openrouter/free';
@@ -35,12 +35,14 @@ async function callOpenRouter(env, model, messages) {
 // Returns { text, modelUsed, inputTokens, outputTokens, blocked }
 // overrideModel: if provided (e.g. from the test console picker), skips D1 resolution
 // for the primary model and uses this directly. Fallback/limit logic still applies.
-export async function getOpenRouterResponse(env, phoneNumber, conversationHistory, userMessage, overrideModel = null) {
+// memoryFacts: array of decrypted durable-fact strings for this phone number (or null),
+// injected into the system prompt via buildSystemPrompt.
+export async function getOpenRouterResponse(env, phoneNumber, conversationHistory, userMessage, overrideModel = null, memoryFacts = null) {
   const db = env.DB;
   const config = await getEffectiveConfig(db, phoneNumber);
 
   const messages = [
-    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'system', content: buildSystemPrompt(memoryFacts) },
     ...conversationHistory.map(msg => ({
       role: msg.role === 'assistant' ? 'assistant' : 'user',
       content: msg.content,
@@ -149,4 +151,62 @@ export async function generateConversationTitle(env, namingModel, conversationHi
   if (title.length > 60) title = title.substring(0, 57) + '...';
 
   return title;
+}
+
+// ---------------------------------------------------------------
+// Memory extraction
+// ---------------------------------------------------------------
+// Separate, lightweight call, same philosophy as generateConversationTitle:
+// doesn't touch fallback/limit/token-tracking, doesn't count against chat limits,
+// always uses the admin-configured memory_model regardless of per-number chat overrides.
+// This function never sees ENCRYPTION_KEY and never touches D1 directly — it's pure
+// text-in/text-out, keeping the encryption boundary entirely in index.js.
+
+const MEMORY_EXTRACTION_PROMPT = `You extract durable facts worth remembering about a person from an SMS conversation, so a future conversation can reference them naturally.
+
+Rules:
+- Only extract facts that are likely to remain true for weeks/months (preferences, ongoing projects, named people/pets, recurring context) — not one-off details from a single message.
+- Each fact: one short sentence, plain text, no more than ~12 words.
+- Return between 0 and 8 facts. Merge/update rather than duplicate similar facts.
+- Respond with ONLY a JSON array of strings, e.g. ["Has a dog named Max","Works as an HVAC technician"]. No markdown, no explanation. If nothing durable was said, respond with [].`;
+
+// existingFacts: array of prior fact strings (or null) to merge/update against.
+// Returns an array of strings (possibly empty), or null on failure (caller should
+// skip saving/overwriting existing memory in that case).
+export async function extractMemory(env, memoryModel, conversationHistory, existingFacts) {
+  if (!conversationHistory.length) return null;
+
+  const transcript = conversationHistory
+    .map(m => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.content}`)
+    .join('\n');
+
+  const existingBlock = existingFacts && existingFacts.length
+    ? `\n\nExisting known facts (update/merge, don't just re-list unchanged ones):\n${existingFacts.map(f => `- ${f}`).join('\n')}`
+    : '';
+
+  const messages = [
+    { role: 'system', content: MEMORY_EXTRACTION_PROMPT },
+    { role: 'user', content: `Conversation:\n${transcript}${existingBlock}` },
+  ];
+
+  try {
+    const data = await callOpenRouter(env, memoryModel, messages);
+    const choice = data.choices?.[0];
+    let raw = choice?.message?.content?.trim();
+    if (!raw) return null;
+
+    // Strip markdown code fences some models add anyway.
+    raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+
+    return parsed
+      .filter(f => typeof f === 'string' && f.trim())
+      .map(f => f.trim().slice(0, 200))
+      .slice(0, 8);
+  } catch (err) {
+    console.error('Memory extraction error:', err.message);
+    return null;
+  }
 }
