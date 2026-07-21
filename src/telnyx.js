@@ -1,54 +1,42 @@
 // telnyx.js - Send SMS/MMS via Telnyx API v2
 
-export async function sendSMS(env, to, message) {
+async function sendMessage(env, to, text, mediaUrls = []) {
+  const body = {
+    from: env.TELNYX_PHONE_NUMBER,
+    to,
+    text,
+  };
+  if (mediaUrls.length > 0) {
+    body.media_urls = mediaUrls;
+  }
+
   const response = await fetch('https://api.telnyx.com/v2/messages', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${env.TELNYX_API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      from: env.TELNYX_PHONE_NUMBER,
-      to: to,
-      text: message,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
-    const error = await response.text();
+    const error = await response.text().catch(() => '(unreadable)');
     console.error('Telnyx send error:', error);
     throw new Error(`Telnyx API error: ${response.status}`);
   }
 
-  return await response.json();
+  return response.json();
 }
 
-export async function sendMMS(env, to, message, mediaUrl) {
-  const response = await fetch('https://api.telnyx.com/v2/messages', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${env.TELNYX_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: env.TELNYX_PHONE_NUMBER,
-      to: to,
-      text: message,
-      media_urls: [mediaUrl],
-    }),
-  });
+export function sendSMS(env, to, text) {
+  return sendMessage(env, to, text);
+}
 
-  if (!response.ok) {
-    const error = await response.text();
-    console.error('Telnyx MMS send error:', error);
-    throw new Error(`Telnyx MMS API error: ${response.status}`);
-  }
-
-  return await response.json();
+export function sendMMS(env, to, text, mediaUrl) {
+  return sendMessage(env, to, text, [mediaUrl]);
 }
 
 export function parseInboundWebhook(body) {
-  // Extract relevant fields from Telnyx v2 webhook
   const data = body?.data?.payload;
   if (!data) return null;
 
