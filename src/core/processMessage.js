@@ -88,18 +88,21 @@ async function handleFilteredMessage(env, phoneNumber, text) {
 // prevents the AI call or the reply from being delivered.
 
 async function runAiTurn(env, ctx, db, phoneNumber, text, returnResult, modelOverride) {
+  const encryptionKey = env.ENCRYPTION_KEY;
   const conversation = await getOrCreateActiveConversation(db, phoneNumber);
-  const history = await getConversationHistory(db, conversation.id);
+  const history = await getConversationHistory(db, conversation.id, phoneNumber, encryptionKey);
 
-  // Save user message — isolated so a D1 hiccup doesn't abort the AI call.
-  // The message may be missing from history on retry, which is acceptable.
+  // Save user message — isolated so a D1 or encryption hiccup doesn't abort the
+  // AI call. If encryption fails we log and continue rather than silently storing
+  // plaintext — the message may be missing from history on retry, which is acceptable.
   try {
-    await saveMessage(db, conversation.id, 'user', text);
+    await saveMessage(db, conversation.id, 'user', text, phoneNumber, encryptionKey);
   } catch (err) {
-    console.error('Failed to save user message to D1 (continuing):', err.message);
+    console.error('Failed to save user message (continuing):', err.message);
   }
 
-  // Log inbound to Sheets — sheets.js has its own catch but we wrap defensively
+  // Log inbound to Sheets — sheets.js has its own catch but we wrap defensively.
+  // Note: only metadata (length, role, etc.) is logged, never message content.
   try {
     await logToSheets(env, {
       phoneNumber,
@@ -118,10 +121,10 @@ async function runAiTurn(env, ctx, db, phoneNumber, text, returnResult, modelOve
   // don't pollute the conversation context
   if (!result.blocked) {
     try {
-      await saveMessage(db, conversation.id, 'assistant', result.text);
-      ctx.waitUntil(maybeAutoNameConversation(env, conversation.id, history.length + 2));
+      await saveMessage(db, conversation.id, 'assistant', result.text, phoneNumber, encryptionKey);
+      ctx.waitUntil(maybeAutoNameConversation(env, conversation.id, phoneNumber, history.length + 2));
     } catch (err) {
-      console.error('Failed to save assistant message to D1 (continuing):', err.message);
+      console.error('Failed to save assistant message (continuing):', err.message);
     }
   }
 
