@@ -7,6 +7,13 @@ import { getEffectiveConfig, recordTokenUsage } from '../../db/index.js';
 const DEFAULT_MODEL = 'openrouter/free';
 const REQUEST_TIMEOUT_MS = 25000;
 
+// User-facing notices for when a fallback model is used instead of the primary
+// one. Deliberately vague about *why* on the server side — no model names, no
+// mention of "admin", "token", "OpenRouter", or anything that reveals internals.
+// Just enough for the user to understand the reply might feel different.
+const LIMIT_FALLBACK_NOTICE = "(You're at your message limit for now, so I've switched to a lighter model to keep chatting.)";
+const ERROR_FALLBACK_NOTICE = "(Having a hiccup with my usual setup, so I switched things up to get you an answer.)";
+
 // Every fetch to OpenRouter gets its own AbortController so the timeout
 // applies independently to the primary call AND any fallback call.
 async function callOpenRouter(env, model, messages) {
@@ -43,11 +50,27 @@ async function callOpenRouter(env, model, messages) {
 
   if (!response.ok) {
     const error = await response.text().catch(() => '(unreadable body)');
-    console.error(`OpenRouter API error (model=${model}):`, error);
+    // 429 = OpenRouter's own rate limit (distinct from our per-number token limit
+    // in D1). Tagged in the log so it's easy to tell apart from a genuine model
+    // error when reading logs — a 429 usually means retrying shortly would work,
+    // an OpenRouter-side error might not.
+    if (response.status === 429) {
+      console.error(`OpenRouter rate limit hit (model=${model}):`, error);
+    } else {
+      console.error(`OpenRouter API error (model=${model}):`, error);
+    }
     throw new Error(`OpenRouter API error: ${response.status}`);
   }
 
   return response.json();
+}
+
+// Prepends a short parenthetical notice to the reply, then re-applies the
+// 950-char SMS hard limit to the combined text so the notice never pushes the
+// total over the limit.
+function withNotice(text, notice) {
+  const combined = `${notice}\n\n${text}`;
+  return combined.length > 950 ? combined.substring(0, 947) + '...' : combined;
 }
 
 // Returns { text, modelUsed, inputTokens, outputTokens, blocked }
@@ -72,6 +95,9 @@ export async function getOpenRouterResponse(env, phoneNumber, conversationHistor
 
   let modelToUse = overrideModel || config.model || DEFAULT_MODEL;
   let usingFallback = false;
+  // Tracks *why* we're on the fallback model, so we can show the right notice
+  // to the user without conflating "you hit your limit" with "something broke".
+  let fallbackReason = null; // 'limit' | 'error' | null
 
   // Over token limit — block or switch to fallback before even calling
   if (config.isOverLimit) {
@@ -86,6 +112,7 @@ export async function getOpenRouterResponse(env, phoneNumber, conversationHistor
     }
     modelToUse = config.fallbackModel;
     usingFallback = true;
+    fallbackReason = 'limit';
   }
 
   let data;
@@ -97,6 +124,7 @@ export async function getOpenRouterResponse(env, phoneNumber, conversationHistor
       console.error(`Primary model "${modelToUse}" failed, trying fallback "${config.fallbackModel}":`, primaryErr.message);
       modelToUse = config.fallbackModel;
       usingFallback = true;
+      fallbackReason = 'error';
       // Fallback call gets its own fresh timeout via callOpenRouter
       data = await callOpenRouter(env, modelToUse, messages);
     } else {
@@ -118,7 +146,13 @@ export async function getOpenRouterResponse(env, phoneNumber, conversationHistor
   }
 
   const rawText = choice.message?.content || "I couldn't generate a response. Please try again.";
-  const text = rawText.length > 950 ? rawText.substring(0, 947) + '...' : rawText;
+  let text = rawText.length > 950 ? rawText.substring(0, 947) + '...' : rawText;
+
+  if (fallbackReason === 'limit') {
+    text = withNotice(rawText, LIMIT_FALLBACK_NOTICE);
+  } else if (fallbackReason === 'error') {
+    text = withNotice(rawText, ERROR_FALLBACK_NOTICE);
+  }
 
   const inputTokens = data.usage?.prompt_tokens || 0;
   const outputTokens = data.usage?.completion_tokens || 0;
