@@ -9,16 +9,21 @@
 //     failure never silently prevents the steps that follow from running.
 //   - sheets.js has its own internal try/catch but we wrap it here too so a future
 //     regression there can never take down the pipeline.
+//   - Memory fetch/decrypt is isolated the same way: a failure there means the AI
+//     call proceeds without memory context, it never blocks or fails the reply.
 
 import { parseCommand, handleCommand } from '../commands/commands.js';
 import { containsBlockedContent } from '../security/filter.js';
+import { decryptMessage } from '../security/crypto.js';
 import { getOpenRouterResponse } from '../integrations/providers/openrouter.js';
 import { logToSheets, logFilteredMessage } from '../integrations/sheets.js';
 import {
   isBlacklisted, isWhitelisted, hasWhitelistEntries,
   getOrCreateActiveConversation, getConversationHistory, saveMessage,
+  getMemoryRow,
 } from '../db/index.js';
 import { maybeAutoNameConversation } from './autoNaming.js';
+import { maybeExtractMemory } from './memoryExtraction.js';
 import { deliverReply } from './deliver.js';
 
 export async function processMessage(env, ctx, phoneNumber, text, returnResult = false, modelOverride = null) {
@@ -68,7 +73,9 @@ async function tryHandleCommand(env, db, phoneNumber, text) {
   const parsed = parseCommand(text);
   if (!parsed) return null;
 
-  const response = await handleCommand(parsed.command, parsed.args, phoneNumber, db);
+  // env is passed through so memory commands (/memory, /forget-memory) can
+  // reach ENCRYPTION_KEY to encrypt/decrypt facts.
+  const response = await handleCommand(parsed.command, parsed.args, phoneNumber, db, env);
   await deliverReply(env, phoneNumber, response);
   return { status: 'command', reply: response };
 }
@@ -84,8 +91,8 @@ async function handleFilteredMessage(env, phoneNumber, text) {
 }
 
 // --- AI turn ---
-// Each step is individually isolated. A failure in saving or logging never
-// prevents the AI call or the reply from being delivered.
+// Each step is individually isolated. A failure in saving, logging, or fetching
+// memory never prevents the AI call or the reply from being delivered.
 
 async function runAiTurn(env, ctx, db, phoneNumber, text, returnResult, modelOverride) {
   const encryptionKey = env.ENCRYPTION_KEY;
@@ -114,8 +121,13 @@ async function runAiTurn(env, ctx, db, phoneNumber, text, returnResult, modelOve
     console.error('Failed to log user message to Sheets (continuing):', err.message);
   }
 
+  // Fetch and decrypt any stored memory for this number — isolated, best-effort.
+  // Skipped entirely if the number has incognito mode on. A failure here just
+  // means the AI call proceeds without memory context; it never blocks the reply.
+  const memoryFacts = await fetchMemoryFacts(db, phoneNumber, encryptionKey);
+
   // AI call — on total failure returns a safe fallback string, never throws
-  const result = await callAi(env, phoneNumber, history, text, modelOverride);
+  const result = await callAi(env, phoneNumber, history, text, modelOverride, memoryFacts);
 
   // Save assistant reply — only if not a limit-block message, so blocked notices
   // don't pollute the conversation context
@@ -123,6 +135,7 @@ async function runAiTurn(env, ctx, db, phoneNumber, text, returnResult, modelOve
     try {
       await saveMessage(db, conversation.id, 'assistant', result.text, phoneNumber, encryptionKey);
       ctx.waitUntil(maybeAutoNameConversation(env, conversation.id, phoneNumber, history.length + 2));
+      ctx.waitUntil(maybeExtractMemory(env, conversation.id, phoneNumber));
     } catch (err) {
       console.error('Failed to save assistant message (continuing):', err.message);
     }
@@ -163,12 +176,32 @@ async function runAiTurn(env, ctx, db, phoneNumber, text, returnResult, modelOve
   };
 }
 
+// --- Memory fetch (isolated, best-effort) ---
+
+async function fetchMemoryFacts(db, phoneNumber, encryptionKey) {
+  if (!encryptionKey) return null;
+
+  try {
+    const memRow = await getMemoryRow(db, phoneNumber);
+    if (!memRow || memRow.incognito || !memRow.encrypted_facts) return null;
+
+    const decrypted = await decryptMessage(phoneNumber, memRow.encrypted_facts, encryptionKey, 'memory');
+    if (!decrypted) return null;
+
+    const facts = JSON.parse(decrypted);
+    return Array.isArray(facts) ? facts : null;
+  } catch (err) {
+    console.error('Memory fetch/decrypt error (continuing without memory):', err.message);
+    return null;
+  }
+}
+
 // --- AI call with fallback response ---
 // Never throws — always returns a valid result shape.
 
-async function callAi(env, phoneNumber, history, text, modelOverride) {
+async function callAi(env, phoneNumber, history, text, modelOverride, memoryFacts) {
   try {
-    return await getOpenRouterResponse(env, phoneNumber, history, text, modelOverride);
+    return await getOpenRouterResponse(env, phoneNumber, history, text, modelOverride, memoryFacts);
   } catch (err) {
     console.error('OpenRouter error:', err);
     return {
