@@ -10,10 +10,10 @@
 //   - sheets.js has its own internal try/catch but we wrap it here too so a future
 //     regression there can never take down the pipeline.
 
-import { parseCommand, handleCommand } from '../commands.js';
-import { containsBlockedContent } from '../filter.js';
-import { getOpenRouterResponse } from '../openrouter.js';
-import { logToSheets, logFilteredMessage } from '../sheets.js';
+import { parseCommand, handleCommand } from '../commands/commands.js';
+import { containsBlockedContent } from '../security/filter.js';
+import { getOpenRouterResponse } from '../integrations/providers/openrouter.js';
+import { logToSheets, logFilteredMessage } from '../integrations/sheets.js';
 import {
   isBlacklisted, isWhitelisted, hasWhitelistEntries,
   getOrCreateActiveConversation, getConversationHistory, saveMessage,

@@ -6,7 +6,7 @@
 // to the naming model — without decryption the AI would receive ciphertext and
 // produce garbage titles.
 
-import { generateConversationTitle } from '../openrouter.js';
+import { generateConversationTitle } from '../integrations/providers/openrouter.js';
 import { getConversationHistory, getConversationMeta, markConversationNamed, getSetting } from '../db/index.js';
 
 const DEFAULT_NAMING_MODEL = 'meta-llama/llama-3.1-8b-instruct:free';

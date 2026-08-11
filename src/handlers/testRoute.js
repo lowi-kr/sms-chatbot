@@ -1,7 +1,7 @@
 // handlers/testRoute.js - Handles GET /test-ui and POST /test.
 // Both routes are only active when TEST_MODE=true.
 
-import { TEST_PAGE_HTML } from '../testpage.js';
+import { TEST_PAGE_HTML } from '../ui/testpage.js';
 import { processMessage } from '../core/processMessage.js';
 
 const CORS_HEADERS = {

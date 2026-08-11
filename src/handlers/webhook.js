@@ -1,7 +1,7 @@
 // handlers/webhook.js - Handles POST /webhook from Telnyx.
 // Returns 200 immediately and processes the message in the background via ctx.waitUntil.
 
-import { parseInboundWebhook } from '../telnyx.js';
+import { parseInboundWebhook } from '../integrations/telnyx.js';
 import { processMessage } from '../core/processMessage.js';
 
 export async function handleWebhook(request, env, ctx) {

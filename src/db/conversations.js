@@ -4,7 +4,7 @@
 // so they can encrypt/decrypt per-phone. Neither function ever stores or returns
 // raw plaintext content — callers must always supply the key.
 
-import { encryptMessage, decryptMessage } from '../crypto.js';
+import { encryptMessage, decryptMessage } from '../security/crypto.js';
 
 export async function getOrCreateActiveConversation(db, phoneNumber) {
   let conv = await db.prepare(
