@@ -91,7 +91,7 @@ Worker → **Settings** → **Variables** → add each as an **Encrypted** secre
 | Variable | Where to get it |
 |---|---|
 | `TELNYX_API_KEY` | Telnyx Mission Control → Auth v2 → Create Key |
-| `TELNYX_PHONE_NUMBER` | Your Telnyx number, E.164 format, e.g. `+19294480731` |
+| `TELNYX_PHONE_NUMBER` | Your Telnyx number, E.164 format, e.g. `+14087566645` |
 | `OPENROUTER_API_KEY` | [openrouter.ai](https://openrouter.ai) → Keys |
 | `ENCRYPTION_KEY` | A random 32-byte hex string (64 hex characters) — **set only on this worker, never on the admin API worker**. This is the pepper used to derive per-phone encryption keys. Losing it makes all stored messages permanently unreadable. |
 | `GOOGLE_SHEETS_ID` | The ID in your Google Sheet URL |
