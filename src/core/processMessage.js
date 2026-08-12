@@ -11,6 +11,21 @@
 //     regression there can never take down the pipeline.
 //   - Memory fetch/decrypt is isolated the same way: a failure there means the AI
 //     call proceeds without memory context, it never blocks or fails the reply.
+//
+// System-error handling (systemError: true, set in callAi when the OpenRouter call
+// itself throws): the fallback text is delivered to the user and logged to Sheets on
+// every occurrence, same as any other reply. But it's only WRITTEN into the encrypted
+// conversation history ONCE per outage streak — deduped by checking whether the
+// immediately-preceding history entry is already that exact error text. This means:
+//   - Retrying "hi" five times during an outage doesn't stuff five identical error
+//     turns into history (which previously caused the model to notice the repetition
+//     and comment on it once service recovered — "I keep getting stuck with the same
+//     reply...").
+//   - The FIRST error in a streak is still recorded once, so if the user later asks
+//     "why were you down earlier?", the model has real, honest context to answer from
+//     instead of denying anything happened.
+//   - Auto-naming and memory extraction never trigger off a system-error turn either
+//     way — those only fire from a genuine successful exchange.
 
 import { parseCommand, handleCommand } from '../commands/commands.js';
 import { containsBlockedContent } from '../security/filter.js';
@@ -126,12 +141,30 @@ async function runAiTurn(env, ctx, db, phoneNumber, text, returnResult, modelOve
   // means the AI call proceeds without memory context; it never blocks the reply.
   const memoryFacts = await fetchMemoryFacts(db, phoneNumber, encryptionKey);
 
-  // AI call — on total failure returns a safe fallback string, never throws
+  // AI call — on total failure returns a safe fallback string with systemError: true,
+  // never throws
   const result = await callAi(env, phoneNumber, history, text, modelOverride, memoryFacts);
 
-  // Save assistant reply — only if not a limit-block message, so blocked notices
-  // don't pollute the conversation context
-  if (!result.blocked) {
+  if (result.blocked) {
+    // Limit-reached notice — never saved to history, never triggers naming/memory.
+    // (unchanged from before)
+  } else if (result.systemError) {
+    // Save this exact error text at most once per outage streak. `history` here is
+    // the state BEFORE this turn, so its last entry is whatever the previous turn
+    // produced — if that was already this same error text, we're mid-retry-storm
+    // and skip writing a duplicate. Naming/memory never trigger for error turns.
+    const lastEntry = history[history.length - 1];
+    const alreadyRecorded = lastEntry && lastEntry.role === 'assistant' && lastEntry.content === result.text;
+
+    if (!alreadyRecorded) {
+      try {
+        await saveMessage(db, conversation.id, 'assistant', result.text, phoneNumber, encryptionKey);
+      } catch (err) {
+        console.error('Failed to save system-error message (continuing):', err.message);
+      }
+    }
+  } else {
+    // Normal successful reply — save and trigger naming/memory as usual.
     try {
       await saveMessage(db, conversation.id, 'assistant', result.text, phoneNumber, encryptionKey);
       ctx.waitUntil(maybeAutoNameConversation(env, conversation.id, phoneNumber, history.length + 2));
@@ -141,7 +174,9 @@ async function runAiTurn(env, ctx, db, phoneNumber, text, returnResult, modelOve
     }
   }
 
-  // Log outbound to Sheets — isolated, never blocks delivery
+  // Log outbound to Sheets — isolated, never blocks delivery. Runs unconditionally
+  // on every attempt (including deduped repeats), so Sheets remains the complete
+  // outage audit trail even for retries that didn't get written to history above.
   try {
     await logToSheets(env, {
       phoneNumber,
@@ -197,7 +232,9 @@ async function fetchMemoryFacts(db, phoneNumber, encryptionKey) {
 }
 
 // --- AI call with fallback response ---
-// Never throws — always returns a valid result shape.
+// Never throws — always returns a valid result shape. On failure, the returned
+// object is flagged systemError: true so callers know to dedupe it against history
+// instead of persisting every retry (see the gating in runAiTurn above).
 
 async function callAi(env, phoneNumber, history, text, modelOverride, memoryFacts) {
   try {
@@ -210,6 +247,7 @@ async function callAi(env, phoneNumber, history, text, modelOverride, memoryFact
       inputTokens: 0,
       outputTokens: 0,
       blocked: false,
+      systemError: true,
     };
   }
 }
