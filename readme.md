@@ -2,20 +2,23 @@
 
 An SMS chatbot powered by OpenRouter (AI backend), Telnyx (SMS/MMS), Cloudflare Workers + D1, and Google Sheets — all built and deployed with zero local CLI, using GitHub.dev and the Cloudflare dashboard.
 
-This is the **core bot worker**. For the companion admin dashboard (message logs, support tickets, whitelist/blacklist, model settings), see [`sms-chatbot-dashboard`](https://github.com/lowi-kr/sms-chatbot-dashboard) — it's a separate repo that reads/writes the same D1 database.
+This is the **core bot worker**, and as of the admin-API merge, it is *also* the admin backend — the dashboard's API now lives in this repo under `src/admin/`. The companion dashboard frontend (message logs, support tickets, whitelist/blacklist, model settings) is a separate repo: [`sms-chatbot-dashboard`](https://github.com/lowi-kr/sms-chatbot-dashboard). It's a static site that talks to *this* worker's `/api/*` routes.
 
 ---
 
 ## Features
 
 - 💬 Full conversational memory per contact, with save/rename/load/delete via slash commands
-- 🔐 **End-to-end message encryption** (AES-256-GCM, per-phone key derivation) — conversation content is not readable server-side, even by the admin
+- 🔐 **End-to-end message encryption** (AES-256-GCM, per-phone key derivation via HKDF) — conversation content is not readable server-side, even by the admin
+- 🧠 **Per-number durable memory** — the bot automatically extracts and remembers durable facts about a contact (preferences, ongoing projects, named people/pets) across conversations, encrypted the same way as messages. Manageable via `/memory`, `/memory add`, `/memory incognito on|off`, `/forget-memory`
+- 🏷️ **Auto-naming** — conversations get an AI-generated title after a few message pairs, using an admin-configurable naming model; never overwrites a user-set name
 - 🤖 AI responses via **OpenRouter**, with per-number model overrides, a per-number fallback model, and a `block` sentinel to cut off specific numbers
 - 📊 Per-number lifetime token tracking (input/output tracked separately) with configurable limits
 - 🛡️ Content filtering (keyword-based)
 - ✅ Whitelist / 🚫 Blacklist number-level access control
 - 🎫 `/support` command routes messages to a plaintext support-ticket queue (visible in the dashboard), separate from encrypted conversation history
 - 🧪 Built-in `/test-ui` test console — chat with the bot directly in a browser, no Telnyx or phone number required
+- 🖥️ **Built-in admin API** (`/api/*`) — powers the dashboard repo directly from this worker; no separate inline-editor-only worker anymore
 - 📁 Logs conversation **metadata** (not message content) to Google Sheets, including model used and token counts
 - 📱 SMS & MMS support via Telnyx
 
@@ -25,10 +28,10 @@ This is the **core bot worker**. For the companion admin dashboard (message logs
 
 | Service | Purpose |
 |---|---|
-| Cloudflare Workers | Webhook server / bot logic |
-| Cloudflare D1 | SQLite database (shared with the admin API worker) |
+| Cloudflare Workers | Webhook server, bot logic, and admin API (`/api/*`) |
+| Cloudflare D1 | SQLite database (shared with the dashboard's `/api/*` calls into this worker) |
 | Telnyx | SMS/MMS sending and receiving |
-| OpenRouter | AI responses (chat completions, OpenAI-compatible) |
+| OpenRouter | AI responses (chat completions, OpenAI-compatible), plus naming and memory-extraction models |
 | Google Sheets | Conversation metadata logging |
 | GitHub | Code hosting + auto-deploy |
 
@@ -39,19 +42,53 @@ This is the **core bot worker**. For the companion admin dashboard (message logs
 ```
 sms-chatbot/
 ├── src/
-│   ├── index.js       # Worker entry point, webhook + /test + /test-ui routes
-│   ├── commands.js     # Slash commands (/new, /save, /list, /support, etc.)
-│   ├── openrouter.js    # OpenRouter API calls, model/fallback/limit resolution
-│   ├── filter.js       # Keyword content filter + system prompt
-│   ├── db.js           # D1 helpers (conversations, lists, per-number settings)
-│   ├── crypto.js        # AES-256-GCM encryption / decryption
-│   ├── sheets.js        # Google Sheets logging
-│   └── testpage.js      # Standalone HTML test console served at /test-ui
+│   ├── index.js                     # Worker entry point — routing only
+│   ├── db/
+│   │   ├── index.js                  # Barrel re-export of all db helpers
+│   │   ├── access.js                  # Blacklist / whitelist
+│   │   ├── conversations.js            # Conversations + encrypted messages
+│   │   ├── settings.js                 # Global key/value settings
+│   │   ├── numbers.js                   # Per-number model/fallback/limit/usage
+│   │   └── memory.js                     # Per-number encrypted memory rows
+│   ├── core/
+│   │   ├── processMessage.js          # Main message pipeline
+│   │   ├── autoNaming.js               # Auto-generates conversation titles
+│   │   ├── memoryExtraction.js          # Extracts durable per-number facts
+│   │   └── deliver.js                    # Sends reply (Telnyx or console in TEST_MODE)
+│   ├── handlers/
+│   │   ├── webhook.js                 # POST /webhook (Telnyx inbound)
+│   │   └── testRoute.js                # GET /test-ui, POST /test
+│   ├── integrations/
+│   │   ├── telnyx.js                  # Telnyx send + inbound webhook parsing
+│   │   ├── sheets.js                   # Google Sheets metadata logging
+│   │   └── providers/
+│   │       └── openrouter.js            # OpenRouter chat, naming, memory extraction
+│   ├── security/
+│   │   ├── crypto.js                  # AES-256-GCM, per-phone HKDF key derivation
+│   │   └── filter.js                   # Keyword content filter + system prompt
+│   ├── commands/
+│   │   └── commands.js                # All slash commands (/new, /memory, /support, etc.)
+│   ├── admin/                        # Dashboard-facing API — merged in from the old
+│   │   │                              # standalone sms-chatbot-admin-api worker
+│   │   ├── index.js                   # Routes every /api/* request, auth via ADMIN_SECRET
+│   │   ├── helpers.js                  # json/auth/dbTry helpers
+│   │   ├── contacts.js                  # Contact list + per-contact conversations/support
+│   │   ├── send.js                       # Admin-initiated outbound SMS
+│   │   ├── lists.js                       # Blacklist / whitelist CRUD
+│   │   ├── support.js                      # Support ticket queue
+│   │   ├── models.js                        # Live OpenRouter model catalog (cached)
+│   │   ├── settings.js                       # Global model/fallback/limit/naming/memory settings
+│   │   ├── numbers.js                         # Per-number overrides + usage
+│   │   └── stats.js                            # Dashboard stat cards
+│   └── ui/
+│       └── testpage.js                # Standalone HTML for /test-ui
 ├── schema.sql
 ├── wrangler.toml
 ├── package.json
 └── README.md
 ```
+
+> **Note:** there is no more `sms-chatbot-admin-api` worker to deploy separately. Everything under `src/admin/` runs *inside this worker*, gets full git history, and auto-deploys on every push like the rest of the codebase.
 
 ---
 
@@ -70,7 +107,7 @@ sms-chatbot/
 2. Name it `sms-chatbot-db` and copy the **Database ID**.
 3. Open the database → **Console** tab → paste the contents of `schema.sql` → **Execute**.
 
-> ⚠️ This same database is shared with the `sms-chatbot-admin-api` worker from the dashboard repo — both bind to it.
+> This is the only D1 database — the dashboard's `/api/*` calls now hit this same worker, so there's no second worker/database pair to keep in sync.
 
 ### Step 3: Create the Worker
 
@@ -93,10 +130,24 @@ Worker → **Settings** → **Variables** → add each as an **Encrypted** secre
 | `TELNYX_API_KEY` | Telnyx Mission Control → Auth v2 → Create Key |
 | `TELNYX_PHONE_NUMBER` | Your Telnyx number, E.164 format, e.g. `+14087566645` |
 | `OPENROUTER_API_KEY` | [openrouter.ai](https://openrouter.ai) → Keys |
-| `ENCRYPTION_KEY` | A random 32-byte hex string (64 hex characters) — **set only on this worker, never on the admin API worker**. This is the pepper used to derive per-phone encryption keys. Losing it makes all stored messages permanently unreadable. |
+| `ENCRYPTION_KEY` | A random 32-byte value, hex-encoded (64 hex characters). See below for how to generate one without a CLI. This is the pepper used to derive per-phone encryption keys for both messages and memory. **Losing or rotating it makes all previously-stored messages/memory permanently unreadable.** |
+| `ADMIN_SECRET` | A strong password you choose yourself — this is the dashboard login. Required now that `src/admin/*` lives in this worker (it used to live on the separate `sms-chatbot-admin-api` worker — if you're migrating from that setup, copy the same value over so existing dashboard sessions/logins keep working). |
 | `GOOGLE_SHEETS_ID` | The ID in your Google Sheet URL |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | From your Google Service Account JSON |
 | `GOOGLE_PRIVATE_KEY` | From your Google Service Account JSON |
+
+#### Generating `ENCRYPTION_KEY` without a CLI
+
+Since there's no local terminal in this workflow, the easiest no-install option is your browser's own JS console (works in Chrome, Firefox, Edge — anything with DevTools):
+
+1. Open DevTools (F12, or Cmd+Opt+I on Mac) on any page, go to the **Console** tab.
+2. Paste this and press Enter:
+   ```js
+   [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, '0')).join('')
+   ```
+3. It prints a 64-character hex string — copy that whole string as the secret's value.
+
+This uses the same cryptographically-secure `crypto.getRandomValues` API the worker itself relies on, so it's safe to use for this. Do this once, store the value somewhere safe (e.g. a password manager) — you'll need the exact same value again if you ever redeploy from scratch, and there's no way to recover stored messages/memory if you lose it.
 
 Optional Cloudflare **variable** (not secret), set in `wrangler.toml` `[vars]` so it survives deploys:
 
@@ -139,6 +190,10 @@ https://sms-chatbot.YOUR-NAME.workers.dev/webhook
 | `/load [id]` | Switch to a conversation |
 | `/delete [id]` | Delete a conversation |
 | `/support [message]` | Send a message to the support queue (plaintext, visible to admin) |
+| `/memory` | See what the bot remembers about you |
+| `/memory add [fact]` | Manually add something to remember |
+| `/memory incognito on\|off` | Pause/resume automatic memory read & write |
+| `/forget-memory` | Erase all stored memory (also clears incognito mode) |
 | `/help` | Show all commands |
 
 ---
@@ -157,7 +212,7 @@ This serves a standalone chat console directly from the worker — no auth, no d
 
 ## Managing Whitelist & Blacklist / Model Overrides
 
-These are best managed from the **[sms-chatbot-dashboard](https://github.com/lowi-kr/sms-chatbot-dashboard)** UI (User Control and Model Settings pages). You can also run SQL directly in the D1 Console tab if needed:
+These are best managed from the **[sms-chatbot-dashboard](https://github.com/lowi-kr/sms-chatbot-dashboard)** UI (User Control and Model Settings pages), which now talks directly to this worker's `/api/*` routes. You can also run SQL directly in the D1 Console tab if needed:
 
 ```sql
 -- Block a number
@@ -173,9 +228,11 @@ INSERT INTO whitelist (phone_number, label) VALUES ('+1234567890', 'My number');
 
 ## Privacy Architecture
 
-- **Conversation messages** are encrypted at rest (AES-256-GCM, per-phone HKDF-derived key) — not readable server-side by anyone, including the admin.
+- **Conversation messages** are encrypted at rest (AES-256-GCM, per-phone HKDF-derived key, purpose `'msg'`) — not readable server-side by anyone, including the admin.
+- **Per-number memory facts** are encrypted the same way, with a separate purpose string (`'memory'`) so the derived key is cryptographically independent from the message key, even though both share the same `ENCRYPTION_KEY` pepper.
+- **`src/admin/*` never touches `ENCRYPTION_KEY`** — this is a hard boundary enforced by design, not just convention. There is no `/api/contacts/:phone/messages` route and there must never be one; it would defeat the encryption entirely.
 - **Support ticket messages** (`/support`) are stored in plaintext and are visible in the dashboard, since they require human follow-up.
-- **Admin-sent outbound SMS** are stored in plaintext in a separate table for the dashboard's conversation view.
+- **Admin-sent outbound SMS** are sent directly via Telnyx from `src/admin/send.js` and not stored as separate plaintext rows beyond what the dashboard already shows.
 - **Google Sheets** logs metadata only, except blocked/filtered messages, which are logged in full for moderation.
 
 ---
@@ -184,7 +241,7 @@ INSERT INTO whitelist (phone_number, label) VALUES ('+1234567890', 'My number');
 
 1. Open the repo → press `.` for GitHub.dev.
 2. Edit files, commit via the Source Control panel.
-3. Cloudflare auto-deploys within ~1 minute.
+3. Cloudflare auto-deploys within ~1 minute — this now includes anything under `src/admin/`, since it's git-tracked and no longer pasted manually into an inline editor.
 
 ---
 
