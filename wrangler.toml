@@ -7,6 +7,15 @@ compatibility_date = "2024-01-01"
 enabled = true
 invocation_logs = true
 
+[vars]
+# Used only as the OpenRouter "HTTP-Referer" attribution header (see
+# src/integrations/providers/openrouter.js) — not a secret, but kept out of
+# source so the worker's public URL isn't hardcoded in a committed file.
+# [vars] (unlike Cloudflare dashboard UI variables) survives redeploys since
+# wrangler.toml is present — same reason TEST_MODE lives here too.
+WORKER_URL = ""
+# TEST_MODE = "true"   # uncomment to enable /test and /test-ui
+
 [[d1_databases]]
 binding = "DB"
 database_name = "sms-chatbot-db"
