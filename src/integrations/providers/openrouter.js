@@ -7,6 +7,11 @@ import { getEffectiveConfig, recordTokenUsage } from '../../db/index.js';
 const DEFAULT_MODEL = 'openrouter/free';
 const REQUEST_TIMEOUT_MS = 25000;
 
+// Fallback only used if the WORKER_URL var isn't set on this worker (e.g. a
+// fresh deploy before wrangler.toml [vars] has been configured). OpenRouter
+// uses this purely as an attribution header — see below.
+const FALLBACK_WORKER_URL = '';
+
 // User-facing notices for when a fallback model is used instead of the primary
 // one. Deliberately vague about *why* on the server side — no model names, no
 // mention of "admin", "token", "OpenRouter", or anything that reveals internals.
@@ -27,7 +32,11 @@ async function callOpenRouter(env, model, messages) {
       headers: {
         'Authorization': `Bearer ${env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://sms-chatbot.blowi7745.workers.dev/',
+        // WORKER_URL is set in wrangler.toml [vars] (or as a dashboard variable)
+        // rather than hardcoded here, since this file is public in the repo.
+        // OpenRouter only uses this for attribution/rate-limit grouping — it's
+        // not a secret, but it shouldn't be baked into source either.
+        'HTTP-Referer': env.WORKER_URL || FALLBACK_WORKER_URL,
         'X-Title': 'SMS Chatbot',
       },
       body: JSON.stringify({
