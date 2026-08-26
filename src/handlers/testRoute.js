@@ -3,12 +3,8 @@
 
 import { TEST_PAGE_HTML } from '../ui/testpage.js';
 import { processMessage } from '../core/processMessage.js';
-
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+import { checkAuth } from '../admin/helpers.js';
+import { isValidModelId, isValidPhone, MAX_MESSAGE_LENGTH } from '../security/validate.js';
 
 export function handleTestUi(env) {
   if (env.TEST_MODE !== 'true') {
@@ -23,7 +19,13 @@ export function handleTestUi(env) {
 }
 
 export function handleTestCors() {
-  return new Response(null, { headers: CORS_HEADERS });
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 export async function handleTestPost(request, env, ctx) {
@@ -34,16 +36,34 @@ export async function handleTestPost(request, env, ctx) {
     );
   }
 
+  if (env.ADMIN_SECRET) {
+    if (!checkAuth(request, env)) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+  } else {
+    console.warn('TEST_MODE is enabled without ADMIN_SECRET; /test is unauthenticated');
+  }
+
   const body = await request.json().catch(() => ({}));
-  if (!body.from || !body.text) {
-    return new Response('Body must include "from" and "text"', {
+  if (!isValidPhone(body.from)) {
+    return new Response('Body "from" must be a valid E.164 phone number', {
       status: 400,
-      headers: CORS_HEADERS,
     });
+  }
+  if (typeof body.text !== 'string' || body.text.trim().length === 0 || body.text.length > MAX_MESSAGE_LENGTH) {
+    return new Response(`Body "text" must be a non-empty string of at most ${MAX_MESSAGE_LENGTH} characters`, {
+      status: 400,
+    });
+  }
+  if (body.model !== undefined && body.model !== null && !isValidModelId(body.model)) {
+    return new Response('Body "model" must be a valid model ID', { status: 400 });
   }
 
   const result = await processMessage(env, ctx, body.from, body.text, true, body.model || null);
   return new Response(JSON.stringify(result, null, 2), {
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
   });
 }

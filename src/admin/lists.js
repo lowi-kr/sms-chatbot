@@ -1,6 +1,7 @@
 // admin/lists.js - Blacklist and whitelist CRUD.
 
 import { json, dbTry } from './helpers.js';
+import { isValidPhone } from '../security/validate.js';
 
 export async function handleLists(request, env, path) {
   const db = env.DB;
@@ -18,11 +19,14 @@ export async function handleLists(request, env, path) {
 
   if (path === '/api/blacklist' && request.method === 'POST') {
     const body = await request.json().catch(() => ({}));
-    if (!body.phone_number) return json({ error: 'Missing phone_number' }, 400);
+    if (!isValidPhone(body.phone_number)) {
+      return json({ error: 'phone_number must be a valid E.164 phone number' }, 400);
+    }
+    const reason = typeof body.reason === 'string' ? body.reason.slice(0, 200) : '';
     return dbTry(async () => {
       await db.prepare(
         `INSERT OR IGNORE INTO blacklist (phone_number, reason) VALUES (?, ?)`
-      ).bind(body.phone_number, body.reason || '').run();
+      ).bind(body.phone_number, reason).run();
       return json({ success: true });
     });
   }
@@ -50,11 +54,14 @@ export async function handleLists(request, env, path) {
 
   if (path === '/api/whitelist' && request.method === 'POST') {
     const body = await request.json().catch(() => ({}));
-    if (!body.phone_number) return json({ error: 'Missing phone_number' }, 400);
+    if (!isValidPhone(body.phone_number)) {
+      return json({ error: 'phone_number must be a valid E.164 phone number' }, 400);
+    }
+    const label = typeof body.label === 'string' ? body.label.slice(0, 200) : '';
     return dbTry(async () => {
       await db.prepare(
         `INSERT OR IGNORE INTO whitelist (phone_number, label) VALUES (?, ?)`
-      ).bind(body.phone_number, body.label || '').run();
+      ).bind(body.phone_number, label).run();
       return json({ success: true });
     });
   }

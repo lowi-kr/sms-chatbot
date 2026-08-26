@@ -192,6 +192,14 @@ export const TEST_PAGE_HTML = `<!DOCTYPE html>
     const phone = numberField.value.trim();
     if (!text || !phone) { showToast('Enter a message and test number'); return; }
 
+    const tokenKey = 'sms-chatbot-test-token';
+    let token = sessionStorage.getItem(tokenKey);
+    if (!token) {
+      token = prompt('Enter the admin password');
+      if (!token) { showToast('Admin password is required'); return; }
+      sessionStorage.setItem(tokenKey, token);
+    }
+
     appendMessage('user', text);
     input.value = '';
 
@@ -202,11 +210,20 @@ export const TEST_PAGE_HTML = `<!DOCTYPE html>
     try {
       const resp = await fetch('/test', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
         body: JSON.stringify({ from: phone, text, model: selectedModel || undefined }),
       });
 
       const data = await resp.json().catch(() => null);
+
+      if (resp.status === 401) {
+        sessionStorage.removeItem(tokenKey);
+        showToast('Unauthorized — check the admin password');
+        return;
+      }
 
       if (!resp.ok || !data) {
         appendMessage('assistant', 'Error: worker returned ' + resp.status + '. Is TEST_MODE=true set?');

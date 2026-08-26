@@ -4,16 +4,31 @@
 // dbTry() is the standard way any route wraps a DB/network operation so a
 // failure comes back as { error: <real message> } instead of a raw 500.
 
-export const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+export function corsHeaders(request, env) {
+  const headers = {
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+  const configuredOrigins = typeof env.ADMIN_ALLOWED_ORIGINS === 'string'
+    ? env.ADMIN_ALLOWED_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean)
+    : [];
+
+  if (!env.ADMIN_ALLOWED_ORIGINS) {
+    headers['Access-Control-Allow-Origin'] = '*';
+  } else {
+    headers.Vary = 'Origin';
+    const origin = request.headers.get('Origin');
+    if (origin && configuredOrigins.includes(origin)) {
+      headers['Access-Control-Allow-Origin'] = origin;
+    }
+  }
+  return headers;
+}
 
 export function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 
@@ -22,8 +37,24 @@ export function unauthorized() {
 }
 
 export function checkAuth(request, env) {
+  if (!env.ADMIN_SECRET) return false;
   const auth = request.headers.get('Authorization') || '';
-  return auth.replace('Bearer ', '') === env.ADMIN_SECRET;
+  if (auth.length < 7 || auth.slice(0, 7).toLowerCase() !== 'bearer ') return false;
+  return timingSafeEqualStr(auth.slice(7), env.ADMIN_SECRET);
+}
+
+export function timingSafeEqualStr(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || !a || !b) return false;
+
+  const maxLength = Math.max(a.length, b.length);
+  let difference = 0;
+  for (let i = 0; i < maxLength; i++) {
+    const aCode = i < a.length ? a.charCodeAt(i) : 0;
+    const bCode = i < b.length ? b.charCodeAt(i) : 0;
+    difference |= aCode ^ bCode;
+  }
+  const sameLength = a.length === b.length;
+  return difference === 0 && sameLength;
 }
 
 // Wraps an async operation (usually one or more D1 calls) and converts any
