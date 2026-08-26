@@ -4,7 +4,7 @@ This guide deploys the SMS chatbot as a Cloudflare Worker with D1, Telnyx, OpenR
 
 ## Prerequisites
 
-You need a GitHub repository (public is supported and recommended for this GPL-3.0-licensed project), Cloudflare account, Telnyx account and SMS-capable number, OpenRouter API key, and (for metadata logging) a Google Cloud project with Sheets API enabled. The companion dashboard is [sms-chatbot-dashboard](https://github.com/lowi-kr/sms-chatbot-dashboard); it is deployed separately and calls this worker's `/api/*` endpoints.
+You need a Cloudflare account, Telnyx account and SMS-capable number, OpenRouter API key, and (for metadata logging) a Google Cloud project with Sheets API enabled. The companion dashboard is [sms-chatbot-dashboard](https://github.com/lowi-kr/sms-chatbot-dashboard); it is deployed separately and calls this worker's `/api/*` endpoints.
 
 ## 1. Repository and Cloudflare deployment
 
