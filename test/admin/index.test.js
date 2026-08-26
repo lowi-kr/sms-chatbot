@@ -31,7 +31,6 @@ describe('handleAdminRequest', () => {
     await expect(login.json()).resolves.toEqual({ token: env.ADMIN_SECRET });
     expect((await handleAdminRequest(request('/api/login', { method: 'POST', body: JSON.stringify({ password: 'wrong' }) }), env)).status).toBe(401);
     expect((await handleAdminRequest(request('/api/contacts'), env)).status).toBe(401);
-    routeMocks.handleContacts.mockResolvedValueOnce(null);
     routeMocks.handleSend.mockResolvedValueOnce(new Response('handled', { status: 202 }));
     const handled = await handleAdminRequest(request('/api/contacts', { headers: { Authorization: `Bearer ${env.ADMIN_SECRET}` } }), env);
     expect(handled.status).toBe(202);

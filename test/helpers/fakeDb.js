@@ -11,6 +11,10 @@ export function makeDb(matchers = []) {
     return value;
   }
 
+  function throwIfConfigured(matcher) {
+    if (matcher?.error) throw matcher.error;
+  }
+
   return {
     calls,
     prepare(sql) {
@@ -19,6 +23,7 @@ export function makeDb(matchers = []) {
         const call = { sql, args: [], method };
         calls.push(call);
         if (!matcher) throw new Error(`No fake DB matcher for SQL: ${sql}`);
+        throwIfConfigured(matcher);
         if (method === 'first') return response(matcher, 'first');
         if (method === 'all') return { results: response(matcher, 'all') ?? [] };
         return response(matcher, 'run') ?? { meta: { last_row_id: 1, changes: 1 } };
@@ -33,16 +38,19 @@ export function makeDb(matchers = []) {
             async first() {
               calls.push({ ...call, method: 'first' });
               if (!matcher) throw new Error(`No fake DB matcher for SQL: ${sql}`);
+              throwIfConfigured(matcher);
               return response(matcher, 'first');
             },
             async all() {
               calls.push({ ...call, method: 'all' });
               if (!matcher) throw new Error(`No fake DB matcher for SQL: ${sql}`);
+              throwIfConfigured(matcher);
               return { results: response(matcher, 'all') ?? [] };
             },
             async run() {
               calls.push({ ...call, method: 'run' });
               if (!matcher) throw new Error(`No fake DB matcher for SQL: ${sql}`);
+              throwIfConfigured(matcher);
               return response(matcher, 'run') ?? { meta: { last_row_id: 1, changes: 1 } };
             },
           };

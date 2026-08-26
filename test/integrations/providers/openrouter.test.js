@@ -19,9 +19,9 @@ const answer = (text = 'reply', model = 'model') => response({
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  vi.clearAllMocks();
   getEffectiveConfig.mockResolvedValue({ model: 'primary', fallbackModel: 'fallback', isOverLimit: false });
   recordTokenUsage.mockResolvedValue(undefined);
-  vi.clearAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.stubGlobal('fetch', vi.fn());
 });

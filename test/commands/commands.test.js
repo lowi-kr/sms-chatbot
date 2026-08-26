@@ -122,6 +122,7 @@ describe('memory commands', () => {
   });
 
   it('adds facts with validation, incognito protection, and an eight-fact cap', async () => {
+    // "add" lacks the trailing space required by the prefix check, so it falls through to the view path; the prompt branch is unreachable through handleCommand because args are pre-trimmed.
     expect(await handleCommand('/memory', 'add', phone, makeDb([{ match: 'FROM memory', first: null }]), env)).toContain("don't have any stored memory");
     expect(await handleCommand('/memory', `add ${'x'.repeat(201)}`, phone, makeDb(), env)).toContain('too long');
     const paused = makeDb([{ match: 'FROM memory', first: { incognito: 1 } }]);

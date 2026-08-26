@@ -100,10 +100,23 @@ describe('processMessage AI pipeline', () => {
     getConversationHistory.mockResolvedValue([]);
     const env = makeEnv();
     await processMessage(env, makeCtx(), '+1', 'one', true);
-    const errorText = saveMessage.mock.calls[1][2];
+    const errorText = saveMessage.mock.calls[1][3];
     getConversationHistory.mockResolvedValue([{ role: 'assistant', content: errorText }]);
     await processMessage(env, makeCtx(), '+1', 'two', true);
+    expect(saveMessage).toHaveBeenCalledTimes(3);
+    expect(saveMessage.mock.calls.filter(call => call[2] === 'assistant')).toHaveLength(1);
+    expect(logToSheets).toHaveBeenCalledTimes(4);
+    expect(maybeAutoNameConversation).not.toHaveBeenCalled();
+    expect(maybeExtractMemory).not.toHaveBeenCalled();
+  });
+  it('saves a system error again when the previous assistant text differs', async () => {
+    getOpenRouterResponse.mockRejectedValue(new Error('down'));
+    getConversationHistory.mockResolvedValue([{ role: 'assistant', content: 'different error' }]);
+    const env = makeEnv();
+    await processMessage(env, makeCtx(), '+1', 'one', true);
+    await processMessage(env, makeCtx(), '+1', 'two', true);
     expect(saveMessage).toHaveBeenCalledTimes(4);
+    expect(saveMessage.mock.calls.filter(call => call[2] === 'assistant')).toHaveLength(2);
     expect(logToSheets).toHaveBeenCalledTimes(4);
     expect(maybeAutoNameConversation).not.toHaveBeenCalled();
     expect(maybeExtractMemory).not.toHaveBeenCalled();
