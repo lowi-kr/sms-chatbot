@@ -18,16 +18,14 @@ You need a Cloudflare account, Telnyx account and SMS-capable number, OpenRouter
 
 ## 2. Create and initialize D1
 
-Dashboard method:
+### Dashboard UI approach
 
-1. Cloudflare Dashboard → Workers & Pages → D1 → Create database.
+1. Open Cloudflare Dashboard → Workers & Pages → D1 → Create database.
 2. Name it `sms-chatbot-db` and copy the generated Database ID.
 3. Open the database's Console tab, paste the complete contents of `schema.sql`, and execute it.
 4. Verify tables include `conversations`, `messages`, `settings`, `memory`, `support_tickets`, `number_settings`, `whitelist`, and `blacklist`.
 
-The schema creates indexes and default settings, including the free OpenRouter model, `block` as the default fallback, naming and memory models, and a memory extraction threshold of 10 messages. Do not omit `support_tickets` or `number_settings`; the support and per-number settings APIs depend on them.
-
-Wrangler alternative:
+### CLI approach (Wrangler)
 
 ```bash
 npm install
@@ -37,7 +35,11 @@ npx wrangler d1 execute sms-chatbot-db --file=schema.sql --remote
 
 Use `--local` instead of `--remote` for a local development database. The package aliases are `npm run db:create`, `npm run db:init`, and `npm run db:init:remote`.
 
-## 3. Configure wrangler.toml and the D1 binding
+The schema creates indexes and default settings, including the free OpenRouter model, `block` as the default fallback, naming and memory models, and a memory extraction threshold of 10 messages. Do not omit `support_tickets` or `number_settings`; the support and per-number settings APIs depend on them.
+
+## 3. Configure the D1 binding and environment variables
+
+### CLI approach (Wrangler configuration)
 
 Edit `wrangler.toml` and set the ID returned by D1:
 
@@ -56,11 +58,24 @@ database_name = "sms-chatbot-db"
 database_id = "YOUR-D1-DATABASE-ID"
 ```
 
-Keep the binding name exactly `DB`. `WORKER_URL` is used for OpenRouter attribution and is not secret. Keep `TEST_MODE` in `[vars]` when enabled: values in the committed Wrangler configuration survive redeploys, while dashboard variables can be overwritten by a deployment configuration that includes `wrangler.toml`. Commit and push the updated file, then confirm deployment succeeds.
+Keep the binding name exactly `DB`. `WORKER_URL` is used for OpenRouter attribution and is not secret. `TEST_MODE` is a non-secret environment variable; keep it in `[vars]` when enabled. Commit and push the updated file, then confirm deployment succeeds.
+
+### Dashboard UI approach
+
+1. Open Workers & Pages → select the deployed `sms-chatbot` Worker → Settings → Bindings.
+2. Choose Add binding → D1 database, set the variable/binding name to exactly `DB`, select `sms-chatbot-db`, and save.
+3. Open Settings → Variables and Secrets → Environment Variables, choose the appropriate environment (Production, and Preview if used), and add `WORKER_URL` with the Worker URL.
+4. To enable browser testing, add `TEST_MODE` with the value `true`. To return to live delivery, remove it or change it to `false`.
+5. Save and deploy/redeploy the Worker. Confirm the binding and variables are present in the selected environment.
+
+If the Worker is connected to Git and `wrangler.toml` declares the binding or `[vars]`, treat that file as the source of truth: update it and push a commit so a later deployment does not overwrite Dashboard-only settings. Dashboard bindings and variables must be configured separately for each environment when applicable.
 
 ## 4. Add encrypted secrets
 
-Cloudflare: Worker → Settings → Variables and Secrets → Add variable → mark each value as an encrypted secret:
+### Dashboard UI approach
+
+1. Open Workers & Pages → select the Worker → Settings → Variables and Secrets.
+2. Under the target environment, choose Add variable, enter each name/value below, select Encrypt/Secret for sensitive values, and save. Deploy or redeploy after saving.
 
 | Secret | Value |
 |---|---|
@@ -72,6 +87,25 @@ Cloudflare: Worker → Settings → Variables and Secrets → Add variable → m
 | `GOOGLE_SHEETS_ID` | Spreadsheet ID in its URL |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | `client_email` from service-account JSON |
 | `GOOGLE_PRIVATE_KEY` | `private_key` from service-account JSON, preserving line breaks or escaped newlines as required |
+
+When editing an existing secret, use its Edit/Replace control; Cloudflare does not reveal the old encrypted value. Add the secrets in both Production and Preview only if both environments need them. Never put secrets in `wrangler.toml` or commit them.
+
+### CLI approach (Wrangler)
+
+Use Wrangler's secret prompt for each secret; it keeps the value out of the command line and shell history:
+
+```bash
+npx wrangler secret put TELNYX_API_KEY
+npx wrangler secret put TELNYX_PHONE_NUMBER
+npx wrangler secret put OPENROUTER_API_KEY
+npx wrangler secret put ENCRYPTION_KEY
+npx wrangler secret put ADMIN_SECRET
+npx wrangler secret put GOOGLE_SHEETS_ID
+npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_EMAIL
+npx wrangler secret put GOOGLE_PRIVATE_KEY
+```
+
+Run the commands from the repository so Wrangler uses the intended Worker configuration. For a non-production environment, pass the appropriate Wrangler environment option and configure that environment's binding/variables as well.
 
 Never commit secrets. `ENCRYPTION_KEY` is the pepper used to derive per-phone keys for messages and memory. Losing it or rotating it makes previously stored encrypted data permanently unreadable, so keep a secure backup.
 
@@ -113,6 +147,8 @@ https://sms-chatbot.YOUR-NAME.workers.dev/webhook
 
 ## 7. TEST_MODE and browser testing
 
+### CLI approach
+
 Set this in `wrangler.toml` and redeploy:
 
 ```toml
@@ -120,7 +156,13 @@ Set this in `wrangler.toml` and redeploy:
 TEST_MODE = "true"
 ```
 
-With `TEST_MODE = "true"`, AI replies are printed to Worker logs instead of sent through Telnyx, and test routes are enabled. Open `https://sms-chatbot.YOUR-NAME.workers.dev/test-ui`. The standalone console uses `/test`, requires no phone number or dashboard, and lets you select an OpenRouter model per message. Do not leave test mode enabled in production if you expect SMS delivery. Remove or comment out `TEST_MODE`, commit, and redeploy for live Telnyx delivery.
+Commit and push the file, or run the deployment command used by your repository.
+
+### Dashboard UI approach
+
+In the Worker, open Settings → Variables and Secrets → Environment Variables, add or edit `TEST_MODE`, set it to `true`, save, and deploy. Remove it or set it to `false` and redeploy for live Telnyx delivery.
+
+With `TEST_MODE = "true"`, AI replies are printed to Worker logs instead of sent through Telnyx, and test routes are enabled. Open `https://sms-chatbot.YOUR-NAME.workers.dev/test-ui`. The standalone console uses `/test`, requires no phone number or dashboard, and lets you select an OpenRouter model per message. Do not leave test mode enabled in production if you expect SMS delivery.
 
 ## 8. Dashboard and administration
 
