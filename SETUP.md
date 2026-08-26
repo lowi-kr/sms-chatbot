@@ -8,12 +8,13 @@ You need a GitHub repository (public is supported and recommended for this GPL-3
 
 ## 1. Repository and Cloudflare deployment
 
-1. Open `lowi-kr/sms-chatbot` on GitHub. Use GitHub.dev by pressing `.`, or clone it locally.
-2. Confirm the repository contains `src/`, `schema.sql`, `wrangler.toml`, and `package.json`.
-3. Commit and push changes to `main` (or the branch configured in Cloudflare).
-4. In Cloudflare, open Workers & Pages → Create application → Workers → Connect to Git, select the repository, and authorize GitHub.
-5. Use the Worker deployment settings appropriate for this repository, with `src/index.js` as the entry point. Save and deploy.
-6. Cloudflare will redeploy after pushes. This is a Cloudflare Worker deployment, not a Pages deployment.
+1. Fork the repository to your own GitHub account.
+2. Open your fork on GitHub. Use GitHub.dev by pressing `.`, or clone it locally.
+3. Confirm your fork contains `src/`, `schema.sql`, `wrangler.toml`, and `package.json`.
+4. Commit and push changes to `main` (or the branch configured in Cloudflare).
+5. In Cloudflare, open Workers & Pages → Create application → Workers → Connect to Git, select your fork, and authorize GitHub.
+6. Use the Worker deployment settings appropriate for this repository, with `src/index.js` as the entry point. Save and deploy.
+7. Cloudflare will redeploy after pushes. This is a Cloudflare Worker deployment, not a Pages deployment.
 
 ## 2. Create and initialize D1
 
