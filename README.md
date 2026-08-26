@@ -64,7 +64,7 @@ Send these commands by SMS:
 
 ## Setup
 
-Deployment is designed to work from GitHub.dev and the Cloudflare dashboard, with optional Wrangler commands. The complete guide covers repository deployment, Pages/Workers, D1 creation and schema initialization, bindings, Wrangler configuration, secrets, browser encryption-key generation, Google Sheets, Telnyx webhooks, TEST_MODE, and administration.
+Deployment is designed to work from GitHub.dev and the Cloudflare dashboard, with optional Wrangler commands. The complete guide covers repository deployment, Cloudflare Worker deployment, D1 creation and schema initialization, bindings, Wrangler configuration, secrets, browser encryption-key generation, Google Sheets, Telnyx webhooks, TEST_MODE, and administration.
 
 → [Read the complete setup guide](SETUP.md)
 

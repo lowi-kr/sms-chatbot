@@ -1,19 +1,19 @@
 # Setup and Deployment
 
-This guide deploys the SMS chatbot with Cloudflare Workers and D1, Telnyx, OpenRouter, and optional Google Sheets logging. The workflow can be completed in a browser; Wrangler commands are included for local or CI workflows.
+This guide deploys the SMS chatbot as a Cloudflare Worker with D1, Telnyx, OpenRouter, and optional Google Sheets logging. The workflow can be completed in a browser; Wrangler commands are included for local or CI workflows.
 
 ## Prerequisites
 
-You need a private GitHub repository, Cloudflare account, Telnyx account and SMS-capable number, OpenRouter API key, and (for metadata logging) a Google Cloud project with Sheets API enabled. The companion dashboard is [sms-chatbot-dashboard](https://github.com/lowi-kr/sms-chatbot-dashboard); it is deployed separately and calls this worker's `/api/*` endpoints.
+You need a GitHub repository (public is supported and recommended for this GPL-3.0-licensed project), Cloudflare account, Telnyx account and SMS-capable number, OpenRouter API key, and (for metadata logging) a Google Cloud project with Sheets API enabled. The companion dashboard is [sms-chatbot-dashboard](https://github.com/lowi-kr/sms-chatbot-dashboard); it is deployed separately and calls this worker's `/api/*` endpoints.
 
 ## 1. Repository and Cloudflare deployment
 
 1. Open `lowi-kr/sms-chatbot` on GitHub. Use GitHub.dev by pressing `.`, or clone it locally.
 2. Confirm the repository contains `src/`, `schema.sql`, `wrangler.toml`, and `package.json`.
 3. Commit and push changes to `main` (or the branch configured in Cloudflare).
-4. In Cloudflare, open Workers & Pages → Create application → Pages → Connect to Git, select the repository, and authorize GitHub.
-5. Use framework preset None. Leave build command and output directory blank. Save and deploy.
-6. Cloudflare will redeploy after pushes. Although the Pages UI is used to connect the repository, this code is a Worker whose entry point is `src/index.js`; if the UI presents a Workers Git deployment option, use the equivalent Git-connected Worker deployment and preserve that entry point.
+4. In Cloudflare, open Workers & Pages → Create application → Workers → Connect to Git, select the repository, and authorize GitHub.
+5. Use the Worker deployment settings appropriate for this repository, with `src/index.js` as the entry point. Save and deploy.
+6. Cloudflare will redeploy after pushes. This is a Cloudflare Worker deployment, not a Pages deployment.
 
 ## 2. Create and initialize D1
 
@@ -150,4 +150,4 @@ Use `wrangler dev` locally and `wrangler tail` or Cloudflare Dashboard → Worke
 
 ## Security notes
 
-Messages are stored at rest with AES-256-GCM using a per-phone HKDF-derived key. Memory facts use a separate purpose string (`memory`) from messages (`msg`). Admin code deliberately does not expose decrypted conversation messages; support tickets are the plaintext exception. Sheets receives metadata, except moderation content for blocked/filtered messages. Keep the repository private, restrict Cloudflare and Telnyx access, and do not rotate `ENCRYPTION_KEY` unless intentionally abandoning existing ciphertext.
+Messages are stored at rest with AES-256-GCM using a per-phone HKDF-derived key. Memory facts use a separate purpose string (`memory`) from messages (`msg`). Admin code deliberately does not expose decrypted conversation messages; support tickets are the plaintext exception. Sheets receives metadata, except moderation content for blocked/filtered messages. A public repository is appropriate for this GPL-3.0-licensed project; restrict Cloudflare and Telnyx access, and do not rotate `ENCRYPTION_KEY` unless intentionally abandoning existing ciphertext.
