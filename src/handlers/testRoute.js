@@ -4,7 +4,7 @@
 import { TEST_PAGE_HTML } from '../ui/testpage.js';
 import { processMessage } from '../core/processMessage.js';
 import { checkAuth } from '../admin/helpers.js';
-import { isValidModelId, isValidPhone, MAX_MESSAGE_LENGTH } from '../security/validate.js';
+import { isValidModelId, isValidPhone, normalizePhone, MAX_MESSAGE_LENGTH } from '../security/validate.js';
 
 export function handleTestUi(env) {
   if (env.TEST_MODE !== 'true') {
@@ -62,7 +62,8 @@ export async function handleTestPost(request, env, ctx) {
     return new Response('Body "model" must be a valid model ID', { status: 400 });
   }
 
-  const result = await processMessage(env, ctx, body.from, body.text, true, body.model || null);
+  const from = normalizePhone(body.from);
+  const result = await processMessage(env, ctx, from, body.text, true, body.model || null);
   return new Response(JSON.stringify(result, null, 2), {
     headers: { 'Content-Type': 'application/json' },
   });

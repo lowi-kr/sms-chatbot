@@ -1,7 +1,7 @@
 // admin/numbers.js - Per-number model/fallback/token-limit overrides + usage stats.
 
 import { json, dbTry } from './helpers.js';
-import { isValidModelId, isValidPhone } from '../security/validate.js';
+import { decodePhoneParam, isValidModelId } from '../security/validate.js';
 
 export async function handleNumbers(request, env, path) {
   const db = env.DB;
@@ -27,13 +27,8 @@ export async function handleNumbers(request, env, path) {
 
   const modelMatch = path.match(/^\/api\/numbers\/(.+)\/model$/);
   if (modelMatch && request.method === 'POST') {
-    let phone;
-    try {
-      phone = decodeURIComponent(modelMatch[1]);
-    } catch {
-      return json({ error: 'Invalid phone number' }, 400);
-    }
-    if (!isValidPhone(phone)) return json({ error: 'Invalid phone number' }, 400);
+    const phone = decodePhoneParam(modelMatch[1]);
+    if (!phone) return json({ error: 'Invalid phone number' }, 400);
     const body = await request.json().catch(() => ({}));
     const model = body.model === undefined ? null : body.model;
     if (model !== null && !isValidModelId(model)) {
@@ -50,13 +45,8 @@ export async function handleNumbers(request, env, path) {
 
   const fallbackMatch = path.match(/^\/api\/numbers\/(.+)\/fallback$/);
   if (fallbackMatch && request.method === 'POST') {
-    let phone;
-    try {
-      phone = decodeURIComponent(fallbackMatch[1]);
-    } catch {
-      return json({ error: 'Invalid phone number' }, 400);
-    }
-    if (!isValidPhone(phone)) return json({ error: 'Invalid phone number' }, 400);
+    const phone = decodePhoneParam(fallbackMatch[1]);
+    if (!phone) return json({ error: 'Invalid phone number' }, 400);
     const body = await request.json().catch(() => ({}));
     const fallbackModel = body.fallback_model === undefined ? null : body.fallback_model;
     if (fallbackModel !== null &&
@@ -75,13 +65,8 @@ export async function handleNumbers(request, env, path) {
 
   const limitMatch = path.match(/^\/api\/numbers\/(.+)\/limit$/);
   if (limitMatch && request.method === 'POST') {
-    let phone;
-    try {
-      phone = decodeURIComponent(limitMatch[1]);
-    } catch {
-      return json({ error: 'Invalid phone number' }, 400);
-    }
-    if (!isValidPhone(phone)) return json({ error: 'Invalid phone number' }, 400);
+    const phone = decodePhoneParam(limitMatch[1]);
+    if (!phone) return json({ error: 'Invalid phone number' }, 400);
     const body = await request.json().catch(() => ({}));
     const tokenLimit = body.token_limit === null || body.token_limit === '' ? null : parseInt(body.token_limit, 10);
     if (tokenLimit !== null && (!Number.isInteger(tokenLimit) || tokenLimit < 0)) {
@@ -98,13 +83,8 @@ export async function handleNumbers(request, env, path) {
 
   const resetMatch = path.match(/^\/api\/numbers\/(.+)\/reset-usage$/);
   if (resetMatch && request.method === 'POST') {
-    let phone;
-    try {
-      phone = decodeURIComponent(resetMatch[1]);
-    } catch {
-      return json({ error: 'Invalid phone number' }, 400);
-    }
-    if (!isValidPhone(phone)) return json({ error: 'Invalid phone number' }, 400);
+    const phone = decodePhoneParam(resetMatch[1]);
+    if (!phone) return json({ error: 'Invalid phone number' }, 400);
     return dbTry(async () => {
       await db.prepare(
         `INSERT INTO number_settings (phone_number, tokens_input_used, tokens_output_used, updated_at)

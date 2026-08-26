@@ -5,7 +5,7 @@
 // never hold — this is a hard privacy boundary, not an oversight.
 
 import { json, dbTry } from './helpers.js';
-import { isValidPhone } from '../security/validate.js';
+import { decodePhoneParam } from '../security/validate.js';
 
 export async function handleContacts(request, env, path) {
   const db = env.DB;
@@ -35,13 +35,8 @@ export async function handleContacts(request, env, path) {
 
   const convMatch = path.match(/^\/api\/contacts\/(.+)\/conversations$/);
   if (convMatch && request.method === 'GET') {
-    let phone;
-    try {
-      phone = decodeURIComponent(convMatch[1]);
-    } catch {
-      return json({ error: 'Invalid phone number' }, 400);
-    }
-    if (!isValidPhone(phone)) return json({ error: 'Invalid phone number' }, 400);
+    const phone = decodePhoneParam(convMatch[1]);
+    if (!phone) return json({ error: 'Invalid phone number' }, 400);
     return dbTry(async () => {
       const { results } = await db.prepare(`
         SELECT c.id, c.name, c.is_active, c.created_at, c.updated_at,
@@ -58,13 +53,8 @@ export async function handleContacts(request, env, path) {
 
   const supportMatch = path.match(/^\/api\/contacts\/(.+)\/support$/);
   if (supportMatch && request.method === 'GET') {
-    let phone;
-    try {
-      phone = decodeURIComponent(supportMatch[1]);
-    } catch {
-      return json({ error: 'Invalid phone number' }, 400);
-    }
-    if (!isValidPhone(phone)) return json({ error: 'Invalid phone number' }, 400);
+    const phone = decodePhoneParam(supportMatch[1]);
+    if (!phone) return json({ error: 'Invalid phone number' }, 400);
     return dbTry(async () => {
       const { results } = await db.prepare(`
         SELECT id, message, status, created_at, closed_at

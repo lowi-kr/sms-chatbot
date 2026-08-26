@@ -1,7 +1,7 @@
 // admin/lists.js - Blacklist and whitelist CRUD.
 
 import { json, dbTry } from './helpers.js';
-import { isValidPhone } from '../security/validate.js';
+import { decodePhoneParam, isValidPhone, normalizePhone } from '../security/validate.js';
 
 export async function handleLists(request, env, path) {
   const db = env.DB;
@@ -22,21 +22,24 @@ export async function handleLists(request, env, path) {
     if (!isValidPhone(body.phone_number)) {
       return json({ error: 'phone_number must be a valid E.164 phone number' }, 400);
     }
+    const phoneNumber = normalizePhone(body.phone_number);
     const reason = typeof body.reason === 'string' ? body.reason.slice(0, 200) : '';
     return dbTry(async () => {
       await db.prepare(
         `INSERT OR IGNORE INTO blacklist (phone_number, reason) VALUES (?, ?)`
-      ).bind(body.phone_number, reason).run();
+      ).bind(phoneNumber, reason).run();
       return json({ success: true });
     });
   }
 
   const blMatch = path.match(/^\/api\/blacklist\/(.+)$/);
   if (blMatch && request.method === 'DELETE') {
+    const phone = decodePhoneParam(blMatch[1]);
+    if (!phone) return json({ error: 'Invalid phone number' }, 400);
     return dbTry(async () => {
       await db.prepare(
         `DELETE FROM blacklist WHERE phone_number = ?`
-      ).bind(decodeURIComponent(blMatch[1])).run();
+      ).bind(phone).run();
       return json({ success: true });
     });
   }
@@ -57,21 +60,24 @@ export async function handleLists(request, env, path) {
     if (!isValidPhone(body.phone_number)) {
       return json({ error: 'phone_number must be a valid E.164 phone number' }, 400);
     }
+    const phoneNumber = normalizePhone(body.phone_number);
     const label = typeof body.label === 'string' ? body.label.slice(0, 200) : '';
     return dbTry(async () => {
       await db.prepare(
         `INSERT OR IGNORE INTO whitelist (phone_number, label) VALUES (?, ?)`
-      ).bind(body.phone_number, label).run();
+      ).bind(phoneNumber, label).run();
       return json({ success: true });
     });
   }
 
   const wlMatch = path.match(/^\/api\/whitelist\/(.+)$/);
   if (wlMatch && request.method === 'DELETE') {
+    const phone = decodePhoneParam(wlMatch[1]);
+    if (!phone) return json({ error: 'Invalid phone number' }, 400);
     return dbTry(async () => {
       await db.prepare(
         `DELETE FROM whitelist WHERE phone_number = ?`
-      ).bind(decodeURIComponent(wlMatch[1])).run();
+      ).bind(phone).run();
       return json({ success: true });
     });
   }

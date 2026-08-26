@@ -5,13 +5,13 @@
 
 import { json } from './helpers.js';
 import { sendSMS } from '../integrations/telnyx.js';
-import { isValidPhone, MAX_MESSAGE_LENGTH } from '../security/validate.js';
+import { isValidPhone, normalizePhone, MAX_MESSAGE_LENGTH } from '../security/validate.js';
 
 export async function handleSend(request, env, path) {
   if (path !== '/api/send' || request.method !== 'POST') return null;
 
   const body = await request.json().catch(() => ({}));
-  const to = typeof body.to === 'string' ? body.to.trim() : '';
+  const to = normalizePhone(body.to);
   const { message } = body;
   if (!isValidPhone(to)) {
     return json({ error: 'The "to" field must be a valid E.164 phone number' }, 400);

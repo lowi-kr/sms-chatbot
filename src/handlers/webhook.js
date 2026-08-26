@@ -4,7 +4,7 @@
 import { parseInboundWebhook } from '../integrations/telnyx.js';
 import { processMessage } from '../core/processMessage.js';
 import { verifyTelnyxSignature } from '../security/telnyxSignature.js';
-import { isValidPhone, MAX_MESSAGE_LENGTH } from '../security/validate.js';
+import { isValidPhone, normalizePhone, MAX_MESSAGE_LENGTH } from '../security/validate.js';
 
 export async function handleWebhook(request, env, ctx) {
   const rawBody = await request.text();
@@ -40,6 +40,7 @@ export async function handleWebhook(request, env, ctx) {
     return new Response('OK', { status: 200 });
   }
 
-  ctx.waitUntil(processMessage(env, ctx, msg.from, msg.text));
+  const from = normalizePhone(msg.from);
+  ctx.waitUntil(processMessage(env, ctx, from, msg.text));
   return new Response('OK', { status: 200 });
 }

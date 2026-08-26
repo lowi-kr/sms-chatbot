@@ -2,8 +2,24 @@
 
 export const MAX_MESSAGE_LENGTH = 1600;
 
+export function normalizePhone(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 export function isValidPhone(value) {
-  return typeof value === 'string' && /^\+[1-9]\d{7,14}$/.test(value.trim());
+  return /^\+[1-9]\d{7,14}$/.test(normalizePhone(value));
+}
+
+export function decodePhoneParam(rawSegment) {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(rawSegment);
+  } catch {
+    return null;
+  }
+
+  const phone = normalizePhone(decoded);
+  return isValidPhone(phone) ? phone : null;
 }
 
 export function isValidModelId(value) {
