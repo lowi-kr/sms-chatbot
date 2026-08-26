@@ -53,11 +53,13 @@ export async function handleAdminRequest(request, env) {
   const path = url.pathname;
 
   try {
+    // Fail closed rather than comparing two undefineds below.
+    if (!adminSecretConfigured(env)) {
+      console.error('Admin route misconfigured: ADMIN_SECRET is not set');
+      return json({ error: 'Server misconfigured: ADMIN_SECRET is not set' }, 500);
+    }
+
     if (path === '/api/login' && request.method === 'POST') {
-      if (!adminSecretConfigured(env)) {
-        console.error('Admin route misconfigured: ADMIN_SECRET is not set');
-        return json({ error: 'Server misconfigured: ADMIN_SECRET is not set' }, 500);
-      }
       const { body, error } = await readJsonBody(request);
       if (error) return error;
       if (body.password === env.ADMIN_SECRET) return json({ token: env.ADMIN_SECRET });
