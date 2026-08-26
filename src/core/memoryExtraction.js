@@ -18,7 +18,7 @@
 // models are cheap/free and this only fires every N messages.
 
 import { extractMemory } from '../integrations/providers/openrouter.js';
-import { encryptMessage, decryptMessage } from '../security/crypto.js';
+import { decryptFacts, encryptFacts } from './memoryFacts.js';
 import { getConversationHistory, getMemoryRow, saveMemoryRow, getSetting } from '../db/index.js';
 
 const DEFAULT_MEMORY_MODEL = 'meta-llama/llama-3.1-8b-instruct:free';
@@ -40,17 +40,13 @@ export async function maybeExtractMemory(env, conversationId, phoneNumber) {
 
     if (fullHistory.length - lastCount < threshold) return;
 
-    let existingFacts = null;
-    if (memRow?.encrypted_facts) {
-      const decrypted = await decryptMessage(phoneNumber, memRow.encrypted_facts, env.ENCRYPTION_KEY, 'memory');
-      if (decrypted) existingFacts = JSON.parse(decrypted);
-    }
+    const existingFacts = await decryptFacts(phoneNumber, memRow?.encrypted_facts, env.ENCRYPTION_KEY);
 
     const memoryModel = await getSetting(db, 'memory_model', DEFAULT_MEMORY_MODEL);
     const newFacts = await extractMemory(env, memoryModel, fullHistory, existingFacts);
     if (newFacts === null) return; // extraction failed — don't overwrite existing memory or bump the counter
 
-    const encrypted = await encryptMessage(phoneNumber, JSON.stringify(newFacts), env.ENCRYPTION_KEY, 'memory');
+    const encrypted = await encryptFacts(phoneNumber, newFacts, env.ENCRYPTION_KEY);
     await saveMemoryRow(db, phoneNumber, encrypted, fullHistory.length);
   } catch (err) {
     console.error('Memory extraction error:', err.message);

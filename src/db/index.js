@@ -6,3 +6,4 @@ export * from './conversations.js';
 export * from './settings.js';
 export * from './numbers.js';
 export * from './memory.js';
+export * from './support.js';

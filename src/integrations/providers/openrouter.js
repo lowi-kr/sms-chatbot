@@ -3,6 +3,7 @@
 
 import { buildSystemPrompt } from '../../security/filter.js';
 import { getEffectiveConfig, recordTokenUsage } from '../../db/index.js';
+import { truncate, truncateForSms } from '../../utils/text.js';
 
 const DEFAULT_MODEL = 'openrouter/free';
 const REQUEST_TIMEOUT_MS = 25000;
@@ -78,8 +79,7 @@ async function callOpenRouter(env, model, messages) {
 // 950-char SMS hard limit to the combined text so the notice never pushes the
 // total over the limit.
 function withNotice(text, notice) {
-  const combined = `${notice}\n\n${text}`;
-  return combined.length > 950 ? combined.substring(0, 947) + '...' : combined;
+  return truncateForSms(`${notice}\n\n${text}`);
 }
 
 // Returns { text, modelUsed, inputTokens, outputTokens, blocked }
@@ -155,7 +155,7 @@ export async function getOpenRouterResponse(env, phoneNumber, conversationHistor
   }
 
   const rawText = choice.message?.content || "I couldn't generate a response. Please try again.";
-  let text = rawText.length > 950 ? rawText.substring(0, 947) + '...' : rawText;
+  let text = truncateForSms(rawText);
 
   if (fallbackReason === 'limit') {
     text = withNotice(rawText, LIMIT_FALLBACK_NOTICE);
@@ -213,7 +213,7 @@ export async function generateConversationTitle(env, namingModel, conversationHi
 
   title = title.replace(/^["'""]+|["'""]+$/g, '').trim();
   if (!title) return null;
-  if (title.length > 60) title = title.substring(0, 57) + '...';
+  title = truncate(title, 60);
 
   return title;
 }

@@ -4,17 +4,14 @@
 // dbTry() is the standard way any route wraps a DB/network operation so a
 // failure comes back as { error: <real message> } instead of a raw 500.
 
-export const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+import { corsHeaders, jsonResponse } from '../http/responses.js';
+
+export { readJsonBody } from '../http/responses.js';
+
+export const CORS_HEADERS = corsHeaders('GET, POST, DELETE, OPTIONS');
 
 export function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-  });
+  return jsonResponse(data, status, CORS_HEADERS);
 }
 
 export function unauthorized() {

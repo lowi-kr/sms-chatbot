@@ -3,12 +3,9 @@
 
 import { TEST_PAGE_HTML } from '../ui/testpage.js';
 import { processMessage } from '../core/processMessage.js';
+import { corsHeaders, readJsonBody } from '../http/responses.js';
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+const CORS_HEADERS = corsHeaders('POST, OPTIONS');
 
 export function handleTestUi(env) {
   if (env.TEST_MODE !== 'true') {
@@ -34,7 +31,7 @@ export async function handleTestPost(request, env, ctx) {
     );
   }
 
-  const body = await request.json().catch(() => ({}));
+  const body = await readJsonBody(request);
   if (!body.from || !body.text) {
     return new Response('Body must include "from" and "text"', {
       status: 400,

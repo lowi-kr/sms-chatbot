@@ -29,7 +29,7 @@
 
 import { parseCommand, handleCommand } from '../commands/commands.js';
 import { containsBlockedContent } from '../security/filter.js';
-import { decryptMessage } from '../security/crypto.js';
+import { decryptFacts } from './memoryFacts.js';
 import { getOpenRouterResponse } from '../integrations/providers/openrouter.js';
 import { logToSheets, logFilteredMessage } from '../integrations/sheets.js';
 import {
@@ -220,11 +220,8 @@ async function fetchMemoryFacts(db, phoneNumber, encryptionKey) {
     const memRow = await getMemoryRow(db, phoneNumber);
     if (!memRow || memRow.incognito || !memRow.encrypted_facts) return null;
 
-    const decrypted = await decryptMessage(phoneNumber, memRow.encrypted_facts, encryptionKey, 'memory');
-    if (!decrypted) return null;
-
-    const facts = JSON.parse(decrypted);
-    return Array.isArray(facts) ? facts : null;
+    const facts = await decryptFacts(phoneNumber, memRow.encrypted_facts, encryptionKey);
+    return facts.length ? facts : null;
   } catch (err) {
     console.error('Memory fetch/decrypt error (continuing without memory):', err.message);
     return null;
