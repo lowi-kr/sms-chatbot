@@ -2,7 +2,7 @@
 
 > Encrypted, conversational SMS AI powered by Telnyx, Cloudflare Workers, OpenRouter, and D1.
 
-[![Cloudflare Workers](https://img.shields.io/badge/runtime-Cloudflare%20Workers-orange)](https://workers.cloudflare.com/) [![Telnyx](https://img.shields.io/badge/SMS-Telnyx-00a3e0)](https://telnyx.com/) [![OpenRouter](https://img.shields.io/badge/AI-OpenRouter-111827)](https://openrouter.ai/) [![License](https://img.shields.io/badge/license-see%20repository-lightgrey)](LICENSE)
+[![Cloudflare Workers](https://img.shields.io/badge/runtime-Cloudflare%20Workers-orange)](https://workers.cloudflare.com/) [![Telnyx](https://img.shields.io/badge/SMS-Telnyx-00a3e0)](https://telnyx.com/) [![OpenRouter](https://img.shields.io/badge/AI-OpenRouter-111827)](https://openrouter.ai/) [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
 
 SMS Chatbot turns ordinary texting into a private AI conversation. Messages and durable per-contact memory are encrypted before storage, while Cloudflare D1 provides the durable SQLite-backed data layer. Telnyx handles SMS/MMS delivery and OpenRouter provides configurable AI models.
 
@@ -58,7 +58,7 @@ Send these commands by SMS:
 | `/support [message]` | Create a plaintext support ticket |
 | `/memory` | View remembered facts |
 | `/memory add [fact]` | Add a fact manually |
-| `/memory incognito on\|off` | Pause or resume memory read/write |
+| `/memory incognito on\\|off` | Pause or resume memory read/write |
 | `/forget-memory` | Erase stored memory and reset incognito |
 | `/help` | Show available commands |
 
@@ -112,3 +112,7 @@ npm run tail
 ```
 
 See [SETUP.md](SETUP.md) for configuration details and operational cautions.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for the complete text.
