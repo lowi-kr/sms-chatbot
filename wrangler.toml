@@ -15,6 +15,7 @@ invocation_logs = true
 # wrangler.toml is present — same reason TEST_MODE lives here too.
 WORKER_URL = ""
 # TEST_MODE = "true"   # uncomment to enable /test and /test-ui
+# ADMIN_ALLOWED_ORIGINS = "https://dashboard.example.com,https://admin.example.com"
 
 [[d1_databases]]
 binding = "DB"

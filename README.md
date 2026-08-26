@@ -75,6 +75,8 @@ Deployment is designed to work from GitHub.dev and the Cloudflare dashboard, wit
 - The admin API does not decrypt or expose conversation content; support tickets are intentionally plaintext for human follow-up.
 - Google Sheets receives metadata such as timestamps, roles, lengths, models, and token counts. Filtered/blocked content is the moderation exception and is logged in full.
 - `ENCRYPTION_KEY` is critical key material: losing or rotating it makes existing ciphertext unreadable. Store it securely and never commit it.
+- `TELNYX_PUBLIC_KEY` is required for Ed25519 webhook verification; unsigned, invalid, or stale `/webhook` requests receive HTTP 401, and the bot will not respond until it is configured.
+- `/test` requests (including those from `/test-ui`) require the `ADMIN_SECRET` password. The test console prompts for it.
 
 ## Testing and administration
 

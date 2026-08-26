@@ -18,7 +18,7 @@
 // try/catch is the final backstop for anything a route handler doesn't catch
 // itself.
 
-import { CORS_HEADERS, json, unauthorized, checkAuth } from './helpers.js';
+import { corsHeaders, json, unauthorized, checkAuth, timingSafeEqualStr } from './helpers.js';
 import { handleContacts } from './contacts.js';
 import { handleSend } from './send.js';
 import { handleLists } from './lists.js';
@@ -43,8 +43,9 @@ const ROUTE_HANDLERS = [
 ];
 
 export async function handleAdminRequest(request, env) {
+  const cors = corsHeaders(request, env);
   if (request.method === 'OPTIONS') {
-    return new Response(null, { headers: CORS_HEADERS });
+    return new Response(null, { headers: cors });
   }
 
   const url = new URL(request.url);
@@ -52,21 +53,38 @@ export async function handleAdminRequest(request, env) {
 
   try {
     if (path === '/api/login' && request.method === 'POST') {
+      if (!env.ADMIN_SECRET) {
+        console.error('Admin API login rejected: ADMIN_SECRET is not configured');
+        return applyCors(json({ error: 'Admin API is not configured' }, 503), cors);
+      }
       const body = await request.json().catch(() => ({}));
-      if (body.password === env.ADMIN_SECRET) return json({ token: env.ADMIN_SECRET });
-      return json({ error: 'Invalid password' }, 401);
+      if (typeof body.password === 'string' &&
+          body.password.length > 0 &&
+          timingSafeEqualStr(body.password, env.ADMIN_SECRET)) {
+        return applyCors(json({ token: env.ADMIN_SECRET }), cors);
+      }
+      return applyCors(json({ error: 'Invalid password' }, 401), cors);
     }
 
-    if (!checkAuth(request, env)) return unauthorized();
+    if (!checkAuth(request, env)) return applyCors(unauthorized(), cors);
 
     for (const handler of ROUTE_HANDLERS) {
       const result = await handler(request, env, path);
-      if (result) return result;
+      if (result) return applyCors(result, cors);
     }
 
-    return json({ error: 'Not found' }, 404);
+    return applyCors(json({ error: 'Not found' }, 404), cors);
   } catch (err) {
     console.error('Unhandled admin route error:', err);
-    return json({ error: err.message }, 500);
+    return applyCors(json({ error: err.message }, 500), cors);
   }
+}
+
+function applyCors(response, cors) {
+  const headers = { ...Object.fromEntries(response.headers), ...cors };
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }

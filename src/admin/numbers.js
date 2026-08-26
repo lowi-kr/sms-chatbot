@@ -1,6 +1,7 @@
 // admin/numbers.js - Per-number model/fallback/token-limit overrides + usage stats.
 
 import { json, dbTry } from './helpers.js';
+import { decodePhoneParam, isValidModelId } from '../security/validate.js';
 
 export async function handleNumbers(request, env, path) {
   const db = env.DB;
@@ -26,9 +27,13 @@ export async function handleNumbers(request, env, path) {
 
   const modelMatch = path.match(/^\/api\/numbers\/(.+)\/model$/);
   if (modelMatch && request.method === 'POST') {
-    const phone = decodeURIComponent(modelMatch[1]);
+    const phone = decodePhoneParam(modelMatch[1]);
+    if (!phone) return json({ error: 'Invalid phone number' }, 400);
     const body = await request.json().catch(() => ({}));
-    const model = body.model || null;
+    const model = body.model === undefined ? null : body.model;
+    if (model !== null && !isValidModelId(model)) {
+      return json({ error: 'model must be a valid model ID or null' }, 400);
+    }
     return dbTry(async () => {
       await db.prepare(
         `INSERT INTO number_settings (phone_number, model, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
@@ -40,9 +45,15 @@ export async function handleNumbers(request, env, path) {
 
   const fallbackMatch = path.match(/^\/api\/numbers\/(.+)\/fallback$/);
   if (fallbackMatch && request.method === 'POST') {
-    const phone = decodeURIComponent(fallbackMatch[1]);
+    const phone = decodePhoneParam(fallbackMatch[1]);
+    if (!phone) return json({ error: 'Invalid phone number' }, 400);
     const body = await request.json().catch(() => ({}));
-    const fallbackModel = body.fallback_model || null;
+    const fallbackModel = body.fallback_model === undefined ? null : body.fallback_model;
+    if (fallbackModel !== null &&
+        fallbackModel !== 'block' &&
+        !isValidModelId(fallbackModel)) {
+      return json({ error: 'fallback_model must be a valid model ID, "block", or null' }, 400);
+    }
     return dbTry(async () => {
       await db.prepare(
         `INSERT INTO number_settings (phone_number, fallback_model, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
@@ -54,9 +65,13 @@ export async function handleNumbers(request, env, path) {
 
   const limitMatch = path.match(/^\/api\/numbers\/(.+)\/limit$/);
   if (limitMatch && request.method === 'POST') {
-    const phone = decodeURIComponent(limitMatch[1]);
+    const phone = decodePhoneParam(limitMatch[1]);
+    if (!phone) return json({ error: 'Invalid phone number' }, 400);
     const body = await request.json().catch(() => ({}));
     const tokenLimit = body.token_limit === null || body.token_limit === '' ? null : parseInt(body.token_limit, 10);
+    if (tokenLimit !== null && (!Number.isInteger(tokenLimit) || tokenLimit < 0)) {
+      return json({ error: 'token_limit must be a non-negative integer or null' }, 400);
+    }
     return dbTry(async () => {
       await db.prepare(
         `INSERT INTO number_settings (phone_number, token_limit, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
@@ -68,7 +83,8 @@ export async function handleNumbers(request, env, path) {
 
   const resetMatch = path.match(/^\/api\/numbers\/(.+)\/reset-usage$/);
   if (resetMatch && request.method === 'POST') {
-    const phone = decodeURIComponent(resetMatch[1]);
+    const phone = decodePhoneParam(resetMatch[1]);
+    if (!phone) return json({ error: 'Invalid phone number' }, 400);
     return dbTry(async () => {
       await db.prepare(
         `INSERT INTO number_settings (phone_number, tokens_input_used, tokens_output_used, updated_at)

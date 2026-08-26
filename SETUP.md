@@ -51,6 +51,7 @@ compatibility_date = "2024-01-01"
 [vars]
 WORKER_URL = "https://sms-chatbot.YOUR-NAME.workers.dev"
 # TEST_MODE = "true"
+# ADMIN_ALLOWED_ORIGINS = "https://dashboard.example.com,https://admin.example.com"
 
 [[d1_databases]]
 binding = "DB"
@@ -58,7 +59,7 @@ database_name = "sms-chatbot-db"
 database_id = "YOUR-D1-DATABASE-ID"
 ```
 
-Keep the binding name exactly `DB`. `WORKER_URL` is used for OpenRouter attribution and is not secret. `TEST_MODE` is a non-secret environment variable; keep it in `[vars]` when enabled. Commit and push the updated file, then confirm deployment succeeds.
+Keep the binding name exactly `DB`. `WORKER_URL` is used for OpenRouter attribution and is not secret. `TEST_MODE` and `ADMIN_ALLOWED_ORIGINS` are non-secret environment variables; keep them in `[vars]` when enabled. Commit and push the updated file, then confirm deployment succeeds.
 
 ### Dashboard UI approach
 
@@ -81,6 +82,7 @@ If the Worker is connected to Git and `wrangler.toml` declares the binding or `[
 |---|---|
 | `TELNYX_API_KEY` | Telnyx Mission Control → Auth v2 API key |
 | `TELNYX_PHONE_NUMBER` | Telnyx number in E.164 form, such as `+14087566645` |
+| `TELNYX_PUBLIC_KEY` | Required: Public Key for the messaging profile/app in the Telnyx portal; used to verify webhook signatures |
 | `OPENROUTER_API_KEY` | OpenRouter → Keys |
 | `ENCRYPTION_KEY` | Exactly 32 random bytes represented as 64 hexadecimal characters |
 | `ADMIN_SECRET` | Long, unique dashboard/API password |
@@ -97,6 +99,7 @@ Use Wrangler's secret prompt for each secret; it keeps the value out of the comm
 ```bash
 npx wrangler secret put TELNYX_API_KEY
 npx wrangler secret put TELNYX_PHONE_NUMBER
+npx wrangler secret put TELNYX_PUBLIC_KEY
 npx wrangler secret put OPENROUTER_API_KEY
 npx wrangler secret put ENCRYPTION_KEY
 npx wrangler secret put ADMIN_SECRET
@@ -154,6 +157,7 @@ Set this in `wrangler.toml` and redeploy:
 ```toml
 [vars]
 TEST_MODE = "true"
+# ADMIN_ALLOWED_ORIGINS = "https://dashboard.example.com,https://admin.example.com"
 ```
 
 Commit and push the file, or run the deployment command used by your repository.
@@ -162,7 +166,7 @@ Commit and push the file, or run the deployment command used by your repository.
 
 In the Worker, open Settings → Variables and Secrets → Environment Variables, add or edit `TEST_MODE`, set it to `true`, save, and deploy. Remove it or set it to `false` and redeploy for live Telnyx delivery.
 
-With `TEST_MODE = "true"`, AI replies are printed to Worker logs instead of sent through Telnyx, and test routes are enabled. Open `https://sms-chatbot.YOUR-NAME.workers.dev/test-ui`. The standalone console uses `/test`, requires no phone number or dashboard, and lets you select an OpenRouter model per message. Do not leave test mode enabled in production if you expect SMS delivery.
+With `TEST_MODE = "true"`, AI replies are printed to Worker logs instead of sent through Telnyx, and test routes are enabled. Open `https://sms-chatbot.YOUR-NAME.workers.dev/test-ui`. The `/test` endpoint used by `/test-ui` requires the `ADMIN_SECRET` password; the console prompts for it. It lets you select an OpenRouter model per message. Do not leave test mode enabled in production if you expect SMS delivery.
 
 ## 8. Dashboard and administration
 

@@ -124,6 +124,7 @@ Worker → **Settings** → **Variables** → add each as an **Encrypted** secre
 |---|---|
 | `TELNYX_API_KEY` | Telnyx Mission Control → Auth v2 → Create Key |
 | `TELNYX_PHONE_NUMBER` | Your Telnyx number, E.164 format, e.g. `+14087566645` |
+| `TELNYX_PUBLIC_KEY` | Telnyx portal → Public Key for the messaging profile/app. Required for webhook signature verification. |
 | `OPENROUTER_API_KEY` | [openrouter.ai](https://openrouter.ai) → Keys |
 | `ENCRYPTION_KEY` | A random 32-byte value, hex-encoded (64 hex characters). See below for how to generate one without a CLI. This is the pepper used to derive per-phone encryption keys for both messages and memory. **Losing or rotating it makes all previously-stored messages/memory permanently unreadable.** |
 | `ADMIN_SECRET` | A strong password you choose yourself — this is the dashboard login. |
@@ -149,9 +150,11 @@ Optional Cloudflare **variable** (not secret), set in `wrangler.toml` `[vars]` s
 ```toml
 [vars]
 TEST_MODE = "true"
+# ADMIN_ALLOWED_ORIGINS = "https://dashboard.example.com,https://admin.example.com"
 ```
 
 When `TEST_MODE = "true"`, AI replies are logged to the console instead of sent via Telnyx, and the `/test` and `/test-ui` routes are enabled.
+`ADMIN_ALLOWED_ORIGINS` is an optional comma-separated list of dashboard origins. If it is unset, the admin API keeps wildcard CORS for backwards compatibility; when set, only listed origins are allowed.
 
 ### Step 6: Set Up Google Sheets Logging
 
@@ -165,11 +168,17 @@ Only metadata is logged (timestamp, phone number, conversation name, role, messa
 
 ### Step 7: Connect the Telnyx Webhook
 
-Telnyx Mission Control → **Messaging** → **Messaging Profiles** → your profile → set **Inbound Webhook URL** to:
+1. Buy or select an SMS-capable Telnyx number.
+2. Create an API key under Mission Control → Auth v2.
+3. Open **Messaging → Messaging Profiles** and select the profile assigned to the number.
+4. Copy the profile/app **Public Key** and add it as the required `TELNYX_PUBLIC_KEY` worker secret.
+5. Set the **Inbound Webhook URL** to:
 
 ```
 https://sms-chatbot.YOUR-NAME.workers.dev/webhook
 ```
+
+Save the profile and ensure the number is assigned to it. `/webhook` rejects unsigned, invalid, or stale requests with HTTP 401, and the bot will not respond until `TELNYX_PUBLIC_KEY` is configured. Send a test SMS and inspect Cloudflare Worker logs if delivery does not occur.
 
 ---
 
@@ -201,7 +210,7 @@ Set `TEST_MODE = "true"` in `wrangler.toml`, deploy, then open:
 https://sms-chatbot.YOUR-NAME.workers.dev/test-ui
 ```
 
-This serves a standalone chat console directly from the worker — no auth, no dashboard, no Telnyx. It talks to the worker's own `/test` endpoint and lets you pick a specific OpenRouter model per-message to try before pinning it in the dashboard.
+This serves a standalone chat console directly from the worker. Requests to `/test` (including those made by `/test-ui`) require the `ADMIN_SECRET` password; the console prompts for it and keeps it in session storage. It lets you pick a specific OpenRouter model per-message to try before pinning it in the dashboard.
 
 ---
 
