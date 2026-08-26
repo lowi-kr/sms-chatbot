@@ -21,9 +21,22 @@ export function unauthorized() {
   return json({ error: 'Unauthorized' }, 401);
 }
 
+export function adminSecretConfigured(env) {
+  return !!env?.ADMIN_SECRET;
+}
+
 export function checkAuth(request, env) {
+  if (!adminSecretConfigured(env)) return false;
   const auth = request.headers.get('Authorization') || '';
   return auth.replace('Bearer ', '') === env.ADMIN_SECRET;
+}
+
+export async function readJsonBody(request) {
+  try {
+    return { body: await request.json() };
+  } catch {
+    return { error: json({ error: 'Invalid JSON body' }, 400) };
+  }
 }
 
 // Wraps an async operation (usually one or more D1 calls) and converts any
@@ -33,7 +46,7 @@ export async function dbTry(fn) {
   try {
     return await fn();
   } catch (err) {
-    console.error('Admin route error:', err.message);
+    console.error('Admin route error:', err);
     return json({ error: err.message }, 500);
   }
 }

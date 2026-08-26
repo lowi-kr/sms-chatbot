@@ -44,7 +44,17 @@ async function getAccessToken(env) {
     body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${header}.${claim}.${sig}`,
   });
 
-  const tokenData = await tokenResponse.json();
+  if (!tokenResponse.ok) {
+    const errorText = await tokenResponse.text().catch(() => '(unreadable)');
+    throw new Error(`Google token endpoint returned ${tokenResponse.status}: ${errorText}`);
+  }
+
+  let tokenData;
+  try {
+    tokenData = await tokenResponse.json();
+  } catch (err) {
+    throw new Error(`Google token endpoint returned invalid JSON: ${err.message}`);
+  }
   if (!tokenData.access_token) {
     throw new Error('Failed to obtain access token: ' + JSON.stringify(tokenData));
   }

@@ -43,7 +43,18 @@ export async function maybeExtractMemory(env, conversationId, phoneNumber) {
     let existingFacts = null;
     if (memRow?.encrypted_facts) {
       const decrypted = await decryptMessage(phoneNumber, memRow.encrypted_facts, env.ENCRYPTION_KEY, 'memory');
-      if (decrypted) existingFacts = JSON.parse(decrypted);
+      if (decrypted) {
+        try {
+          existingFacts = JSON.parse(decrypted);
+          if (!Array.isArray(existingFacts)) {
+            console.error('Memory extraction parse error: stored facts are not an array');
+            existingFacts = null;
+          }
+        } catch (err) {
+          console.error('Memory extraction parse error:', err);
+          existingFacts = null;
+        }
+      }
     }
 
     const memoryModel = await getSetting(db, 'memory_model', DEFAULT_MEMORY_MODEL);
@@ -53,6 +64,6 @@ export async function maybeExtractMemory(env, conversationId, phoneNumber) {
     const encrypted = await encryptMessage(phoneNumber, JSON.stringify(newFacts), env.ENCRYPTION_KEY, 'memory');
     await saveMemoryRow(db, phoneNumber, encrypted, fullHistory.length);
   } catch (err) {
-    console.error('Memory extraction error:', err.message);
+    console.error('Memory extraction error:', err);
   }
 }

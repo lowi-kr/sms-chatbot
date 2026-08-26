@@ -29,6 +29,6 @@ export async function maybeAutoNameConversation(env, conversationId, phoneNumber
 
     await markConversationNamed(db, conversationId, title);
   } catch (err) {
-    console.error('Auto-naming error:', err.message);
+    console.error('Auto-naming error:', err);
   }
 }
