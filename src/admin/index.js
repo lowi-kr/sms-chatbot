@@ -66,10 +66,6 @@ export async function handleAdminRequest(request, env) {
       return json({ error: 'Invalid password' }, 401);
     }
 
-    if (!adminSecretConfigured(env)) {
-      console.error('Admin route misconfigured: ADMIN_SECRET is not set');
-      return json({ error: 'Server misconfigured: ADMIN_SECRET is not set' }, 500);
-    }
     if (!checkAuth(request, env)) return unauthorized();
 
     for (const handler of ROUTE_HANDLERS) {
