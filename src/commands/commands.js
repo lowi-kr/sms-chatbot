@@ -7,7 +7,7 @@ import {
   renameActiveConversation, renameOwnedConversation, createSupportTicket,
 } from '../db/index.js';
 import {
-  MAX_FACT_LENGTH, decryptFacts, encryptFacts, normalizeFacts,
+  MAX_FACT_LENGTH, decryptFactsChecked, encryptFacts, normalizeFacts,
 } from '../core/memoryFacts.js';
 
 // env is required for memory commands (ENCRYPTION_KEY) — every other command
@@ -149,6 +149,14 @@ async function cmdSupport(phoneNumber, args, db) {
 // encryption boundary (purpose='memory') and fact limits core/memoryExtraction.js
 // uses for background extraction. Nothing here is ever exposed to the admin API,
 // which never holds ENCRYPTION_KEY.
+//
+// Unlike processMessage.js/memoryExtraction.js (best-effort, silently proceed
+// without memory on any failure), the commands below are directly user-facing —
+// so they use decryptFactsChecked() and explicitly tell the person when their
+// stored memory is corrupted rather than silently acting like it's empty. This
+// also matters for /memory add: if we couldn't confirm what's already stored,
+// we refuse to write rather than risk silently overwriting a corrupted blob
+// with a fresh array containing only the new fact.
 
 async function cmdMemory(phoneNumber, args, db, env) {
   if (!env?.ENCRYPTION_KEY) {
@@ -183,7 +191,11 @@ async function cmdMemory(phoneNumber, args, db, env) {
       return `You're in incognito mode. Text /memory incognito off first to manage memory.`;
     }
 
-    const stored = await decryptFacts(phoneNumber, row?.encrypted_facts, env.ENCRYPTION_KEY);
+    const { facts: stored, corrupted } = await decryptFactsChecked(phoneNumber, row?.encrypted_facts, env.ENCRYPTION_KEY);
+    if (corrupted) {
+      return `I couldn't read your stored memory — it may be corrupted. Text /forget-memory to reset it.`;
+    }
+
     const facts = normalizeFacts([...stored, fact]);
 
     const encrypted = await encryptFacts(phoneNumber, facts, env.ENCRYPTION_KEY);
@@ -204,7 +216,11 @@ async function cmdMemory(phoneNumber, args, db, env) {
     return `I don't have any stored memory for this number yet.\n\nText /memory add [fact] to add one manually, or just keep chatting — I'll pick things up automatically.`;
   }
 
-  const facts = await decryptFacts(phoneNumber, row.encrypted_facts, env.ENCRYPTION_KEY);
+  const { facts, corrupted } = await decryptFactsChecked(phoneNumber, row.encrypted_facts, env.ENCRYPTION_KEY);
+
+  if (corrupted) {
+    return `I couldn't read your stored memory — it may be corrupted. Text /forget-memory to reset it.`;
+  }
 
   if (!facts.length) {
     return `I don't have any stored memory for this number yet.\n\nText /memory add [fact] to add one manually.`;
@@ -246,4 +262,4 @@ function cmdHelp() {
 /help — Show this message
 
 Just text normally to chat with AI!`;
-}
+  }
