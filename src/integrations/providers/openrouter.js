@@ -130,12 +130,20 @@ export async function getOpenRouterResponse(env, phoneNumber, conversationHistor
   } catch (primaryErr) {
     // Primary model failed — try fallback if we haven't already and one is configured
     if (!usingFallback && config.fallbackModel && config.fallbackModel !== 'block') {
-      console.error(`Primary model "${modelToUse}" failed, trying fallback "${config.fallbackModel}":`, primaryErr.message);
+      const primaryModel = modelToUse;
+      console.error(`Primary model "${primaryModel}" failed, trying fallback "${config.fallbackModel}":`, primaryErr.message);
       modelToUse = config.fallbackModel;
       usingFallback = true;
       fallbackReason = 'error';
       // Fallback call gets its own fresh timeout via callOpenRouter
-      data = await callOpenRouter(env, modelToUse, messages);
+      try {
+        data = await callOpenRouter(env, modelToUse, messages);
+      } catch (fallbackErr) {
+        throw new Error(
+          `Primary model "${primaryModel}" failed (${primaryErr.message}) and fallback "${modelToUse}" also failed: ${fallbackErr.message}`,
+          { cause: fallbackErr }
+        );
+      }
     } else {
       throw primaryErr;
     }

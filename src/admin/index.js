@@ -18,7 +18,9 @@
 // try/catch is the final backstop for anything a route handler doesn't catch
 // itself.
 
-import { CORS_HEADERS, json, unauthorized, checkAuth } from './helpers.js';
+import {
+  CORS_HEADERS, json, unauthorized, checkAuth, adminSecretConfigured, readJsonBody,
+} from './helpers.js';
 import { handleContacts } from './contacts.js';
 import { handleSend } from './send.js';
 import { handleLists } from './lists.js';
@@ -51,8 +53,15 @@ export async function handleAdminRequest(request, env) {
   const path = url.pathname;
 
   try {
+    // Fail closed rather than comparing two undefineds below.
+    if (!adminSecretConfigured(env)) {
+      console.error('Admin route misconfigured: ADMIN_SECRET is not set');
+      return json({ error: 'Server misconfigured: ADMIN_SECRET is not set' }, 500);
+    }
+
     if (path === '/api/login' && request.method === 'POST') {
-      const body = await request.json().catch(() => ({}));
+      const { body, error } = await readJsonBody(request);
+      if (error) return error;
       if (body.password === env.ADMIN_SECRET) return json({ token: env.ADMIN_SECRET });
       return json({ error: 'Invalid password' }, 401);
     }

@@ -1,6 +1,6 @@
 // admin/lists.js - Blacklist and whitelist CRUD.
 
-import { json, dbTry } from './helpers.js';
+import { json, dbTry, readJsonBody } from './helpers.js';
 
 export async function handleLists(request, env, path) {
   const db = env.DB;
@@ -17,7 +17,8 @@ export async function handleLists(request, env, path) {
   }
 
   if (path === '/api/blacklist' && request.method === 'POST') {
-    const body = await request.json().catch(() => ({}));
+    const { body, error } = await readJsonBody(request);
+    if (error) return error;
     if (!body.phone_number) return json({ error: 'Missing phone_number' }, 400);
     return dbTry(async () => {
       await db.prepare(
@@ -49,7 +50,8 @@ export async function handleLists(request, env, path) {
   }
 
   if (path === '/api/whitelist' && request.method === 'POST') {
-    const body = await request.json().catch(() => ({}));
+    const { body, error } = await readJsonBody(request);
+    if (error) return error;
     if (!body.phone_number) return json({ error: 'Missing phone_number' }, 400);
     return dbTry(async () => {
       await db.prepare(

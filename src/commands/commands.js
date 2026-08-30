@@ -230,10 +230,18 @@ async function cmdMemory(phoneNumber, args, db, env) {
     if (row?.encrypted_facts) {
       const decrypted = await decryptMessage(phoneNumber, row.encrypted_facts, env.ENCRYPTION_KEY, 'memory');
       if (decrypted) {
-        try { facts = JSON.parse(decrypted); } catch { facts = []; }
+        try {
+          facts = JSON.parse(decrypted);
+        } catch (err) {
+          console.error('Memory command parse error:', err);
+          return `I couldn't read your stored memory — it may be corrupted. Text /forget-memory to reset it.`;
+        }
       }
     }
-    if (!Array.isArray(facts)) facts = [];
+    if (!Array.isArray(facts)) {
+      console.error('Memory command parse error: stored facts are not an array');
+      return `I couldn't read your stored memory — it may be corrupted. Text /forget-memory to reset it.`;
+    }
 
     facts.push(fact);
     if (facts.length > MAX_STORED_FACTS) facts = facts.slice(facts.length - MAX_STORED_FACTS);
@@ -259,7 +267,16 @@ async function cmdMemory(phoneNumber, args, db, env) {
   const decrypted = await decryptMessage(phoneNumber, row.encrypted_facts, env.ENCRYPTION_KEY, 'memory');
   let facts = [];
   if (decrypted) {
-    try { facts = JSON.parse(decrypted); } catch { facts = []; }
+    try {
+      facts = JSON.parse(decrypted);
+    } catch (err) {
+      console.error('Memory command parse error:', err);
+      return `I couldn't read your stored memory — it may be corrupted. Text /forget-memory to reset it.`;
+    }
+  }
+
+  if (!Array.isArray(facts)) {
+    console.error('Memory command parse error: stored facts are not an array');
   }
 
   if (!Array.isArray(facts) || !facts.length) {
