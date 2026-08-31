@@ -31,7 +31,9 @@ export async function handleTestPost(request, env, ctx) {
     );
   }
 
-  const body = await readJsonBody(request);
+  const { body, error } = await readJsonBody(request, CORS_HEADERS);
+  if (error) return error;
+
   if (!body.from || !body.text) {
     return new Response('Body must include "from" and "text"', {
       status: 400,
