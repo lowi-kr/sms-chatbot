@@ -4,7 +4,9 @@
 // modelOverride: forces a specific model, skipping D1 resolution (used by test console picker)
 //
 // Error isolation contract:
-//   - Access checks, command handling, and content filtering are allowed to abort early.
+//   - Access checks, command handling, and content filtering may abort early, but
+//     their reply delivery is isolated so a delivery failure does not re-enter
+//     the top-level error handler.
 //   - Inside runAiTurn, each step (save, log, AI call, deliver) is isolated so one
 //     failure never silently prevents the steps that follow from running.
 //   - sheets.js has its own internal try/catch but we wrap it here too so a future
@@ -75,7 +77,12 @@ async function checkAccess(env, db, phoneNumber) {
   const whitelistActive = await hasWhitelistEntries(db);
   if (whitelistActive && !(await isWhitelisted(db, phoneNumber))) {
     const msg = "Sorry, this chatbot is private. You don't have access.";
-    await deliverReply(env, phoneNumber, msg);
+    try {
+      await deliverReply(env, phoneNumber, msg);
+    } catch (err) {
+      console.error('Failed to deliver access reply via Telnyx:', err.message);
+      return { status: 'delivery_failed', error: err.message, reply: msg };
+    }
     return { status: 'not_whitelisted', reply: msg };
   }
 
@@ -91,7 +98,12 @@ async function tryHandleCommand(env, db, phoneNumber, text) {
   // env is passed through so memory commands (/memory, /forget-memory) can
   // reach ENCRYPTION_KEY to encrypt/decrypt facts.
   const response = await handleCommand(parsed.command, parsed.args, phoneNumber, db, env);
-  await deliverReply(env, phoneNumber, response);
+  try {
+    await deliverReply(env, phoneNumber, response);
+  } catch (err) {
+    console.error('Failed to deliver command reply via Telnyx:', err.message);
+    return { status: 'delivery_failed', error: err.message, reply: response };
+  }
   return { status: 'command', reply: response };
 }
 
@@ -101,7 +113,12 @@ async function handleFilteredMessage(env, phoneNumber, text) {
   // logFilteredMessage has its own internal try/catch and never throws
   await logFilteredMessage(env, { phoneNumber, message: text });
   const msg = "Sorry, I can't respond to that kind of message. Please keep our conversation appropriate.";
-  await deliverReply(env, phoneNumber, msg);
+  try {
+    await deliverReply(env, phoneNumber, msg);
+  } catch (err) {
+    console.error('Failed to deliver filtered reply via Telnyx:', err.message);
+    return { status: 'delivery_failed', error: err.message, reply: msg };
+  }
   return { status: 'filtered', reply: msg };
 }
 
@@ -146,8 +163,7 @@ async function runAiTurn(env, ctx, db, phoneNumber, text, returnResult, modelOve
   const result = await callAi(env, phoneNumber, history, text, modelOverride, memoryFacts);
 
   if (result.blocked) {
-    // Limit-reached notice — never saved to history, never triggers naming/memory.
-    // (unchanged from before)
+    // Limit-reached notice — delivered below, never saved or used for naming/memory.
   } else if (result.systemError) {
     // Save this exact error text at most once per outage streak. `history` here is
     // the state BEFORE this turn, so its last entry is whatever the previous turn
