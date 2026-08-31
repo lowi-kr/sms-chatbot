@@ -40,6 +40,11 @@ export async function maybeExtractMemory(env, conversationId, phoneNumber) {
 
     if (fullHistory.length - lastCount < threshold) return;
 
+    // decryptFacts always returns an array — [] for "nothing stored", corrupted
+    // data, or a decryption failure alike. That's fine here (unlike commands.js):
+    // this is best-effort background extraction with no user to tell, and an
+    // empty array is treated identically to "no existing facts" by extractMemory
+    // below, so extraction just proceeds fresh from conversation history.
     const existingFacts = await decryptFacts(phoneNumber, memRow?.encrypted_facts, env.ENCRYPTION_KEY);
 
     const memoryModel = await getSetting(db, 'memory_model', DEFAULT_MEMORY_MODEL);
@@ -51,4 +56,4 @@ export async function maybeExtractMemory(env, conversationId, phoneNumber) {
   } catch (err) {
     console.error('Memory extraction error:', err.message);
   }
-}
+        }
