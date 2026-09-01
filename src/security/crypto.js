@@ -3,6 +3,8 @@
 // "purpose" domain-separates different data types (messages vs memory) sharing the same pepper,
 // so compromising one derived key does not help decrypt the other.
 
+import { hexToBytes, bytesToBase64, base64ToBytes } from '../utils/encoding.js';
+
 const ALGO = { name: 'AES-GCM', length: 256 };
 
 // Validates the pepper shape BEFORE we ever touch WebCrypto. Without this,
@@ -137,33 +139,4 @@ export async function decryptMessage(phoneNumber, encryptedBase64, encryptionKey
     console.error(`Decryption failed for ${phoneNumber} (purpose=${purpose}):`, err.message);
     return null;
   }
-}
-
-// ---- Helpers ----
-
-function hexToBytes(hex) {
-  if (hex.length % 2 !== 0) throw new Error('Invalid hex string (odd length)');
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-  }
-  return bytes;
-}
-
-function bytesToBase64(bytes) {
-  let binary = '';
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary);
-}
-
-function base64ToBytes(base64) {
-  let binary;
-  try {
-    binary = atob(base64);
-  } catch (err) {
-    throw new Error(`Stored value is not valid base64: ${err.message}`);
-  }
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
 }

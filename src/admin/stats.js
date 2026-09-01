@@ -1,6 +1,7 @@
 // admin/stats.js - Top-level dashboard stat cards.
 
 import { json, dbTry } from './helpers.js';
+import { countOpenSupportTickets } from '../db/index.js';
 
 export async function handleStats(request, env, path) {
   if (path !== '/api/stats' || request.method !== 'GET') return null;
@@ -13,7 +14,7 @@ export async function handleStats(request, env, path) {
       db.prepare(`SELECT COUNT(*) as count FROM conversations WHERE is_active = 1`).first(),
       db.prepare(`SELECT COUNT(*) as count FROM blacklist`).first(),
       db.prepare(`SELECT COUNT(*) as count FROM whitelist`).first(),
-      db.prepare(`SELECT COUNT(*) as count FROM support_tickets WHERE status = 'open'`).first(),
+      countOpenSupportTickets(db),
     ]);
     return json({
       total_messages: totals.total_messages,
@@ -22,7 +23,7 @@ export async function handleStats(request, env, path) {
       active_conversations: activeConvs.count,
       blacklisted: blacklistCount.count,
       whitelisted: whitelistCount.count,
-      open_support_tickets: openTickets.count,
+      open_support_tickets: openTickets,
     });
   });
 }

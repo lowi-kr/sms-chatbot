@@ -1,6 +1,7 @@
 // admin/support.js - Support ticket queue (plaintext by design, see /support command).
 
 import { json, dbTry } from './helpers.js';
+import { countOpenSupportTickets } from '../db/index.js';
 
 export async function handleSupport(request, env, path) {
   const db = env.DB;
@@ -31,10 +32,7 @@ export async function handleSupport(request, env, path) {
 
   if (path === '/api/support/open-count' && request.method === 'GET') {
     return dbTry(async () => {
-      const result = await db.prepare(
-        `SELECT COUNT(*) as count FROM support_tickets WHERE status = 'open'`
-      ).first();
-      return json({ count: result.count });
+      return json({ count: await countOpenSupportTickets(db) });
     });
   }
 

@@ -1,10 +1,14 @@
 // commands.js - Handles all slash commands
 
-import { encryptMessage, decryptMessage } from '../security/crypto.js';
-import { getMemoryRow, saveMemoryRow, setMemoryIncognitoFlag, deleteMemory } from '../db/index.js';
-
-const MAX_STORED_FACTS = 8;
-const MAX_FACT_LENGTH = 200;
+import {
+  getMemoryRow, saveMemoryRow, setMemoryIncognitoFlag, deleteMemory,
+  startNewConversation, switchActiveConversation, getOwnedConversation,
+  listConversations, countConversationMessages, deleteConversation,
+  renameActiveConversation, renameOwnedConversation, createSupportTicket,
+} from '../db/index.js';
+import {
+  MAX_FACT_LENGTH, decryptFactsChecked, encryptFacts, normalizeFacts,
+} from '../core/memoryFacts.js';
 
 // env is required for memory commands (ENCRYPTION_KEY) — every other command
 // ignores it, so existing callers that only had (command, args, phoneNumber, db)
@@ -48,28 +52,15 @@ export function parseCommand(text) {
 }
 
 async function cmdNew(phoneNumber, db) {
-  await db.prepare(
-    `UPDATE conversations SET is_active = 0, updated_at = CURRENT_TIMESTAMP 
-     WHERE phone_number = ? AND is_active = 1`
-  ).bind(phoneNumber).run();
-
-  const name = `Conversation ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
-  const result = await db.prepare(
-    `INSERT INTO conversations (phone_number, name, is_active) VALUES (?, ?, 1)`
-  ).bind(phoneNumber, name).run();
-
-  return `✨ Started a new conversation! (ID: ${result.meta.last_row_id})\nText /save [name] to give it a name, or just start chatting!`;
+  const conv = await startNewConversation(db, phoneNumber);
+  return `✨ Started a new conversation! (ID: ${conv.id})\nText /save [name] to give it a name, or just start chatting!`;
 }
 
 async function cmdSave(phoneNumber, name, db) {
   if (!name) return `Please provide a name. Example: /save My Recipe Chat`;
 
-  const result = await db.prepare(
-    `UPDATE conversations SET name = ?, is_named = 1, updated_at = CURRENT_TIMESTAMP 
-     WHERE phone_number = ? AND is_active = 1`
-  ).bind(name, phoneNumber).run();
-
-  if (result.meta.changes === 0) return `No active conversation found. Text /new to start one.`;
+  const changed = await renameActiveConversation(db, phoneNumber, name);
+  if (!changed) return `No active conversation found. Text /new to start one.`;
   return `✅ Conversation saved as "${name}"`;
 }
 
@@ -83,36 +74,21 @@ async function cmdRename(phoneNumber, args, db) {
     const name = parts.slice(1).join(' ').trim();
     if (!name) return `Please provide a new name. Example: /rename ${id} My Chat`;
 
-    const result = await db.prepare(
-      `UPDATE conversations SET name = ?, is_named = 1, updated_at = CURRENT_TIMESTAMP 
-       WHERE id = ? AND phone_number = ?`
-    ).bind(name, id, phoneNumber).run();
-
-    if (result.meta.changes === 0) return `Conversation #${id} not found.`;
+    const changed = await renameOwnedConversation(db, id, phoneNumber, name);
+    if (!changed) return `Conversation #${id} not found.`;
     return `✅ Renamed to "${name}"`;
   } else {
     const name = args;
     if (!name) return `Please provide a name. Example: /rename My Chat`;
 
-    const result = await db.prepare(
-      `UPDATE conversations SET name = ?, is_named = 1, updated_at = CURRENT_TIMESTAMP 
-       WHERE phone_number = ? AND is_active = 1`
-    ).bind(name, phoneNumber).run();
-
-    if (result.meta.changes === 0) return `No active conversation found.`;
+    const changed = await renameActiveConversation(db, phoneNumber, name);
+    if (!changed) return `No active conversation found.`;
     return `✅ Renamed to "${name}"`;
   }
 }
 
 async function cmdList(phoneNumber, db) {
-  const { results } = await db.prepare(
-    `SELECT id, name, is_active, updated_at,
-     (SELECT COUNT(*) FROM messages WHERE conversation_id = conversations.id) as msg_count
-     FROM conversations 
-     WHERE phone_number = ? 
-     ORDER BY updated_at DESC 
-     LIMIT 10`
-  ).bind(phoneNumber).all();
+  const results = await listConversations(db, phoneNumber);
 
   if (!results.length) return `No conversations found. Start chatting or text /new!`;
 
@@ -130,24 +106,11 @@ async function cmdLoad(phoneNumber, args, db) {
   const id = parseInt(args);
   if (!id) return `Please provide a conversation ID. Example: /load 3\nText /list to see your conversations.`;
 
-  const conv = await db.prepare(
-    `SELECT id, name FROM conversations WHERE id = ? AND phone_number = ?`
-  ).bind(id, phoneNumber).first();
-
+  const conv = await getOwnedConversation(db, id, phoneNumber);
   if (!conv) return `Conversation #${id} not found. Text /list to see your conversations.`;
 
-  await db.prepare(
-    `UPDATE conversations SET is_active = 0, updated_at = CURRENT_TIMESTAMP 
-     WHERE phone_number = ? AND is_active = 1`
-  ).bind(phoneNumber).run();
-
-  await db.prepare(
-    `UPDATE conversations SET is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-  ).bind(id).run();
-
-  const { count } = await db.prepare(
-    `SELECT COUNT(*) as count FROM messages WHERE conversation_id = ?`
-  ).bind(id).first();
+  await switchActiveConversation(db, phoneNumber, id);
+  const count = await countConversationMessages(db, id);
 
   return `✅ Loaded "${conv.name}" (${count} messages). Continue where you left off!`;
 }
@@ -156,17 +119,13 @@ async function cmdDelete(phoneNumber, args, db) {
   const id = parseInt(args);
   if (!id) return `Please provide a conversation ID. Example: /delete 3\nText /list to see your conversations.`;
 
-  const conv = await db.prepare(
-    `SELECT id, name, is_active FROM conversations WHERE id = ? AND phone_number = ?`
-  ).bind(id, phoneNumber).first();
-
+  const conv = await getOwnedConversation(db, id, phoneNumber);
   if (!conv) return `Conversation #${id} not found.`;
 
-  await db.prepare(`DELETE FROM messages WHERE conversation_id = ?`).bind(id).run();
-  await db.prepare(`DELETE FROM conversations WHERE id = ?`).bind(id).run();
+  await deleteConversation(db, id);
 
   if (conv.is_active) {
-    await cmdNew(phoneNumber, db);
+    await startNewConversation(db, phoneNumber);
     return `🗑️ Deleted "${conv.name}" and started a new conversation.`;
   }
 
@@ -178,9 +137,7 @@ async function cmdSupport(phoneNumber, args, db) {
     return `Please include your message. Example: /support I can't load my conversation`;
   }
 
-  await db.prepare(
-    `INSERT INTO support_tickets (phone_number, message, status) VALUES (?, ?, 'open')`
-  ).bind(phoneNumber, args.trim()).run();
+  await createSupportTicket(db, phoneNumber, args.trim());
 
   return `✅ Your message has been received by the support team. We'll get back to you shortly!`;
 }
@@ -188,10 +145,18 @@ async function cmdSupport(phoneNumber, args, db) {
 // ---------------------------------------------------------------
 // Memory commands
 // ---------------------------------------------------------------
-// All memory read/write in this file goes through security/crypto.js's
-// encryptMessage/decryptMessage with purpose='memory' — the same encryption
-// boundary core/memoryExtraction.js uses for background extraction. Nothing here
-// is ever exposed to the admin API, which never holds ENCRYPTION_KEY.
+// All memory read/write in this file goes through core/memoryFacts.js — the same
+// encryption boundary (purpose='memory') and fact limits core/memoryExtraction.js
+// uses for background extraction. Nothing here is ever exposed to the admin API,
+// which never holds ENCRYPTION_KEY.
+//
+// Unlike processMessage.js/memoryExtraction.js (best-effort, silently proceed
+// without memory on any failure), the commands below are directly user-facing —
+// so they use decryptFactsChecked() and explicitly tell the person when their
+// stored memory is corrupted rather than silently acting like it's empty. This
+// also matters for /memory add: if we couldn't confirm what's already stored,
+// we refuse to write rather than risk silently overwriting a corrupted blob
+// with a fresh array containing only the new fact.
 
 async function cmdMemory(phoneNumber, args, db, env) {
   if (!env?.ENCRYPTION_KEY) {
@@ -207,7 +172,7 @@ async function cmdMemory(phoneNumber, args, db, env) {
     const existing = await getMemoryRow(db, phoneNumber);
     // Row requires encrypted_facts NOT NULL — reuse existing blob, or seed an empty one.
     const placeholderFacts = existing?.encrypted_facts
-      || await encryptMessage(phoneNumber, JSON.stringify([]), env.ENCRYPTION_KEY, 'memory');
+      || await encryptFacts(phoneNumber, [], env.ENCRYPTION_KEY);
     await setMemoryIncognitoFlag(db, phoneNumber, enabling, placeholderFacts);
 
     return enabling
@@ -226,27 +191,14 @@ async function cmdMemory(phoneNumber, args, db, env) {
       return `You're in incognito mode. Text /memory incognito off first to manage memory.`;
     }
 
-    let facts = [];
-    if (row?.encrypted_facts) {
-      const decrypted = await decryptMessage(phoneNumber, row.encrypted_facts, env.ENCRYPTION_KEY, 'memory');
-      if (decrypted) {
-        try {
-          facts = JSON.parse(decrypted);
-        } catch (err) {
-          console.error('Memory command parse error:', err);
-          return `I couldn't read your stored memory — it may be corrupted. Text /forget-memory to reset it.`;
-        }
-      }
-    }
-    if (!Array.isArray(facts)) {
-      console.error('Memory command parse error: stored facts are not an array');
+    const { facts: stored, corrupted } = await decryptFactsChecked(phoneNumber, row?.encrypted_facts, env.ENCRYPTION_KEY);
+    if (corrupted) {
       return `I couldn't read your stored memory — it may be corrupted. Text /forget-memory to reset it.`;
     }
 
-    facts.push(fact);
-    if (facts.length > MAX_STORED_FACTS) facts = facts.slice(facts.length - MAX_STORED_FACTS);
+    const facts = normalizeFacts([...stored, fact]);
 
-    const encrypted = await encryptMessage(phoneNumber, JSON.stringify(facts), env.ENCRYPTION_KEY, 'memory');
+    const encrypted = await encryptFacts(phoneNumber, facts, env.ENCRYPTION_KEY);
     const lastCount = row?.last_extracted_message_count || 0;
     await saveMemoryRow(db, phoneNumber, encrypted, lastCount);
 
@@ -264,22 +216,13 @@ async function cmdMemory(phoneNumber, args, db, env) {
     return `I don't have any stored memory for this number yet.\n\nText /memory add [fact] to add one manually, or just keep chatting — I'll pick things up automatically.`;
   }
 
-  const decrypted = await decryptMessage(phoneNumber, row.encrypted_facts, env.ENCRYPTION_KEY, 'memory');
-  let facts = [];
-  if (decrypted) {
-    try {
-      facts = JSON.parse(decrypted);
-    } catch (err) {
-      console.error('Memory command parse error:', err);
-      return `I couldn't read your stored memory — it may be corrupted. Text /forget-memory to reset it.`;
-    }
+  const { facts, corrupted } = await decryptFactsChecked(phoneNumber, row.encrypted_facts, env.ENCRYPTION_KEY);
+
+  if (corrupted) {
+    return `I couldn't read your stored memory — it may be corrupted. Text /forget-memory to reset it.`;
   }
 
-  if (!Array.isArray(facts)) {
-    console.error('Memory command parse error: stored facts are not an array');
-  }
-
-  if (!Array.isArray(facts) || !facts.length) {
+  if (!facts.length) {
     return `I don't have any stored memory for this number yet.\n\nText /memory add [fact] to add one manually.`;
   }
 
