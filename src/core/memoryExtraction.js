@@ -54,6 +54,6 @@ export async function maybeExtractMemory(env, conversationId, phoneNumber) {
     const encrypted = await encryptFacts(phoneNumber, newFacts, env.ENCRYPTION_KEY);
     await saveMemoryRow(db, phoneNumber, encrypted, fullHistory.length);
   } catch (err) {
-    console.error('Memory extraction error:', err.message);
+    console.error('Memory extraction error:', err);
   }
-        }
+}

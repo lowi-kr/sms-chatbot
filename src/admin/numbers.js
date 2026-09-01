@@ -1,6 +1,6 @@
 // admin/numbers.js - Per-number model/fallback/token-limit overrides + usage stats.
 
-import { json, dbTry } from './helpers.js';
+import { json, dbTry, readJsonBody } from './helpers.js';
 
 export async function handleNumbers(request, env, path) {
   const db = env.DB;
@@ -27,7 +27,8 @@ export async function handleNumbers(request, env, path) {
   const modelMatch = path.match(/^\/api\/numbers\/(.+)\/model$/);
   if (modelMatch && request.method === 'POST') {
     const phone = decodeURIComponent(modelMatch[1]);
-    const body = await request.json().catch(() => ({}));
+    const { body, error } = await readJsonBody(request);
+    if (error) return error;
     const model = body.model || null;
     return dbTry(async () => {
       await db.prepare(
@@ -41,7 +42,8 @@ export async function handleNumbers(request, env, path) {
   const fallbackMatch = path.match(/^\/api\/numbers\/(.+)\/fallback$/);
   if (fallbackMatch && request.method === 'POST') {
     const phone = decodeURIComponent(fallbackMatch[1]);
-    const body = await request.json().catch(() => ({}));
+    const { body, error } = await readJsonBody(request);
+    if (error) return error;
     const fallbackModel = body.fallback_model || null;
     return dbTry(async () => {
       await db.prepare(
@@ -55,7 +57,8 @@ export async function handleNumbers(request, env, path) {
   const limitMatch = path.match(/^\/api\/numbers\/(.+)\/limit$/);
   if (limitMatch && request.method === 'POST') {
     const phone = decodeURIComponent(limitMatch[1]);
-    const body = await request.json().catch(() => ({}));
+    const { body, error } = await readJsonBody(request);
+    if (error) return error;
     const tokenLimit = body.token_limit === null || body.token_limit === '' ? null : parseInt(body.token_limit, 10);
     return dbTry(async () => {
       await db.prepare(

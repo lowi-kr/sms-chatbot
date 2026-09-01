@@ -4,7 +4,7 @@
 // admin-api merge — they already existed in the settings table (seeded by
 // schema.sql) but were never exposed via the API before this.
 
-import { json, dbTry } from './helpers.js';
+import { json, dbTry, readJsonBody } from './helpers.js';
 
 const SETTINGS_KEYS = [
   'ai_model',
@@ -40,7 +40,8 @@ export async function handleSettings(request, env, path) {
   }
 
   if (path === '/api/settings' && request.method === 'POST') {
-    const body = await request.json().catch(() => ({}));
+    const { body, error } = await readJsonBody(request);
+    if (error) return error;
     const updates = Object.entries(body).filter(([k]) => SETTINGS_KEYS.includes(k));
     if (!updates.length) return json({ error: 'No valid settings provided' }, 400);
 

@@ -262,4 +262,4 @@ function cmdHelp() {
 /help — Show this message
 
 Just text normally to chat with AI!`;
-  }
+}

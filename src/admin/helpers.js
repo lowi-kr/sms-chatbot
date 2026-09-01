@@ -47,7 +47,7 @@ export async function dbTry(fn) {
   try {
     return await fn();
   } catch (err) {
-    console.error('Admin route error:', err.message);
+    console.error('Admin route error:', err);
     return json({ error: err.message }, 500);
   }
 }
