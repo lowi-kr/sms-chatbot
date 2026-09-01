@@ -1,8 +1,11 @@
 // admin/settings.js - Global default model / fallback / token limit / naming
-// model / memory model / memory extraction threshold.
+// model / memory model / memory extraction threshold / web search default.
 // memory_model and memory_extraction_threshold were added as part of the
 // admin-api merge — they already existed in the settings table (seeded by
 // schema.sql) but were never exposed via the API before this.
+//
+// web_search_enabled added as part of feature-byok's web-search quick win —
+// see src/integrations/ai-provider.js for how this is applied to a request.
 
 import { json, dbTry, readJsonBody } from './helpers.js';
 
@@ -13,6 +16,7 @@ const SETTINGS_KEYS = [
   'naming_model',
   'memory_model',
   'memory_extraction_threshold',
+  'web_search_enabled',
 ];
 
 export async function handleSettings(request, env, path) {
@@ -35,6 +39,7 @@ export async function handleSettings(request, env, path) {
         naming_model: map.naming_model || 'meta-llama/llama-3.1-8b-instruct:free',
         memory_model: map.memory_model || 'meta-llama/llama-3.1-8b-instruct:free',
         memory_extraction_threshold: map.memory_extraction_threshold ?? '10',
+        web_search_enabled: map.web_search_enabled === '1',
       });
     });
   }
@@ -42,7 +47,16 @@ export async function handleSettings(request, env, path) {
   if (path === '/api/settings' && request.method === 'POST') {
     const { body, error } = await readJsonBody(request);
     if (error) return error;
-    const updates = Object.entries(body).filter(([k]) => SETTINGS_KEYS.includes(k));
+
+    // web_search_enabled arrives as a JS boolean from the dashboard toggle;
+    // normalize to the same '0'/'1' string convention every other settings
+    // value uses in this table, rather than introducing a second value type.
+    const normalizedBody = { ...body };
+    if ('web_search_enabled' in normalizedBody) {
+      normalizedBody.web_search_enabled = normalizedBody.web_search_enabled ? '1' : '0';
+    }
+
+    const updates = Object.entries(normalizedBody).filter(([k]) => SETTINGS_KEYS.includes(k));
     if (!updates.length) return json({ error: 'No valid settings provided' }, 400);
 
     return dbTry(async () => {

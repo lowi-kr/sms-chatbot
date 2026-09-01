@@ -3,11 +3,14 @@
 // the standalone, inline-editor-only sms-chatbot-admin-api worker.
 //
 // Hard privacy boundary: this module and everything it dispatches to NEVER
-// touches env.ENCRYPTION_KEY. Conversation message content and memory facts
-// are encrypted with a per-phone key derived from that pepper, and admin
-// routes are intentionally unable to decrypt either. Do not add ENCRYPTION_KEY
-// usage anywhere under src/admin/, and never add a route that returns decrypted
-// message content (e.g. a "conversationMessages" endpoint).
+// touches env.ENCRYPTION_KEY for conversation message content or memory
+// facts. The one narrow, documented exception is providerKeys.js's
+// encrypt-on-write path for BYOK provider API keys — see the comment at the
+// top of that file for why that's a different kind of secret and not a
+// reopening of the message/memory boundary. Do not add ENCRYPTION_KEY usage
+// anywhere else under src/admin/, and never add a route that returns
+// decrypted message content (e.g. a "conversationMessages" endpoint) or that
+// decrypts a stored provider key back out.
 //
 // Auth: POST /api/login checks the password against ADMIN_SECRET and returns
 // it as a bearer token; every other /api/* route requires that same bearer
@@ -29,6 +32,7 @@ import { handleModels } from './models.js';
 import { handleSettings } from './settings.js';
 import { handleNumbers } from './numbers.js';
 import { handleStats } from './stats.js';
+import { handleProviderKeys } from './providerKeys.js';
 
 // Order doesn't matter for correctness (each handler only claims its own
 // paths and returns null otherwise), but cheaper/more-frequently-hit routes
@@ -42,6 +46,7 @@ const ROUTE_HANDLERS = [
   handleSettings,
   handleNumbers,
   handleStats,
+  handleProviderKeys,
 ];
 
 export async function handleAdminRequest(request, env) {

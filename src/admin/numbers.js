@@ -1,4 +1,4 @@
-// admin/numbers.js - Per-number model/fallback/token-limit overrides + usage stats.
+// admin/numbers.js - Per-number model/fallback/token-limit/web-search overrides + usage stats.
 
 import { json, dbTry, readJsonBody } from './helpers.js';
 
@@ -13,6 +13,7 @@ export async function handleNumbers(request, env, path) {
           ns.model,
           ns.fallback_model,
           ns.token_limit,
+          ns.web_search,
           COALESCE(ns.tokens_input_used, 0) AS tokens_input_used,
           COALESCE(ns.tokens_output_used, 0) AS tokens_output_used,
           ns.updated_at
@@ -65,6 +66,26 @@ export async function handleNumbers(request, env, path) {
         `INSERT INTO number_settings (phone_number, token_limit, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
          ON CONFLICT(phone_number) DO UPDATE SET token_limit = excluded.token_limit, updated_at = CURRENT_TIMESTAMP`
       ).bind(phone, tokenLimit).run();
+      return json({ success: true });
+    });
+  }
+
+  // New for feature-byok. body.web_search: true/false sets an explicit
+  // per-number override; null (or omitted) clears the override back to
+  // "inherit the global web_search_enabled default".
+  const webSearchMatch = path.match(/^\/api\/numbers\/(.+)\/web-search$/);
+  if (webSearchMatch && request.method === 'POST') {
+    const phone = decodeURIComponent(webSearchMatch[1]);
+    const { body, error } = await readJsonBody(request);
+    if (error) return error;
+    const webSearch = body.web_search === null || body.web_search === undefined
+      ? null
+      : (body.web_search ? 1 : 0);
+    return dbTry(async () => {
+      await db.prepare(
+        `INSERT INTO number_settings (phone_number, web_search, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+         ON CONFLICT(phone_number) DO UPDATE SET web_search = excluded.web_search, updated_at = CURRENT_TIMESTAMP`
+      ).bind(phone, webSearch).run();
       return json({ success: true });
     });
   }

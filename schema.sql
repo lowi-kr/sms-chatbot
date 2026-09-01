@@ -44,6 +44,10 @@ INSERT OR IGNORE INTO settings (key, value) VALUES ('naming_model', 'meta-llama/
 INSERT OR IGNORE INTO settings (key, value) VALUES ('memory_model', 'meta-llama/llama-3.1-8b-instruct:free');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('memory_extraction_threshold', '10');
 
+-- Added for feature-byok: global default for the web search quick-win toggle.
+-- '1' = append web search (OpenRouter :online / plugins) to requests by default.
+INSERT OR IGNORE INTO settings (key, value) VALUES ('web_search_enabled', '0');
+
 CREATE TABLE IF NOT EXISTS memory (
   phone_number TEXT PRIMARY KEY,
   encrypted_facts TEXT NOT NULL,
@@ -79,8 +83,78 @@ CREATE TABLE IF NOT EXISTS number_settings (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ---------------------------------------------------------------
+-- feature-byok additions below. All additive — no existing columns
+-- or tables are altered in a breaking way.
+-- ---------------------------------------------------------------
+
+-- Per-number web search override. NULL = inherit the global 'web_search_enabled'
+-- setting above. 0/1 = explicit override for this number.
+--
+-- ⚠️ UNLIKE every other statement in this file, this ALTER TABLE is NOT safe
+-- to re-run — SQLite/D1 has no "ADD COLUMN IF NOT EXISTS", so running this a
+-- second time against a database that already has the column will throw
+-- "duplicate column name: web_search" and abort the whole script.
+-- If you're running this schema.sql fresh against a brand-new D1 database,
+-- leave it here — it'll apply once, cleanly. If you're applying this diff to
+-- your EXISTING production database that already ran the old schema.sql, run
+-- ONLY this one line by itself in the D1 Console instead of re-running the
+-- whole file:
+--   ALTER TABLE number_settings ADD COLUMN web_search INTEGER;
+ALTER TABLE number_settings ADD COLUMN web_search INTEGER;
+
+-- Data-driven provider registry. Adding a new provider later is a data change
+-- (INSERT a row + write one adapter file if its request/response shape is new),
+-- not a hardcoded enum change.
+--   auth_style   - how the API key is attached to the outbound request
+--   adapter      - which adapter module in src/integrations/providers/adapters/
+--                  knows how to build/parse requests for this provider
+CREATE TABLE IF NOT EXISTS providers (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  base_url TEXT NOT NULL,
+  auth_style TEXT NOT NULL CHECK(auth_style IN ('bearer', 'anthropic-header', 'google-query')),
+  adapter TEXT NOT NULL CHECK(adapter IN ('openai-compatible', 'anthropic', 'google')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT OR IGNORE INTO providers (id, name, base_url, auth_style, adapter) VALUES
+  ('openrouter', 'OpenRouter', 'https://openrouter.ai/api/v1/chat/completions', 'bearer', 'openai-compatible'),
+  ('openai', 'OpenAI', 'https://api.openai.com/v1/chat/completions', 'bearer', 'openai-compatible'),
+  ('anthropic', 'Anthropic', 'https://api.anthropic.com/v1/messages', 'anthropic-header', 'anthropic'),
+  ('google', 'Google Gemini', 'https://generativelanguage.googleapis.com/v1beta/models', 'google-query', 'google');
+
+-- Admin-only BYOK keys. api_key_encrypted uses the same HKDF pattern as
+-- messages/memory in src/security/crypto.js, with purpose='provider-key' for
+-- cryptographic separation. Encryption/decryption of this column must ONLY
+-- happen in src/db/providerKeys.js (called from the main worker's provider
+-- layer) — never from src/admin/* routes. See src/admin/providerKeys.js for
+-- the narrow, explicit exception on the write path.
+CREATE TABLE IF NOT EXISTS admin_provider_keys (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  provider_id TEXT NOT NULL REFERENCES providers(id),
+  label TEXT,
+  api_key_encrypted TEXT NOT NULL,
+  key_last4 TEXT NOT NULL,
+  priority_tier TEXT NOT NULL CHECK(priority_tier IN ('prioritized','backup')) DEFAULT 'prioritized',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  always_use INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- If a key has zero rows here, it is unrestricted (usable for any model on
+-- its provider). If it has rows, it may only be used for the listed models.
+CREATE TABLE IF NOT EXISTS provider_key_model_scope (
+  provider_key_id INTEGER NOT NULL REFERENCES admin_provider_keys(id) ON DELETE CASCADE,
+  model_id TEXT NOT NULL,
+  PRIMARY KEY (provider_key_id, model_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_conversations_phone ON conversations(phone_number);
 CREATE INDEX IF NOT EXISTS idx_conversations_active ON conversations(phone_number, is_active);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status);
 CREATE INDEX IF NOT EXISTS idx_support_tickets_phone ON support_tickets(phone_number);
+CREATE INDEX IF NOT EXISTS idx_provider_keys_provider ON admin_provider_keys(provider_id, priority_tier, sort_order);
+CREATE INDEX IF NOT EXISTS idx_provider_keys_active ON admin_provider_keys(is_active);

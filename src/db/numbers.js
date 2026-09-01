@@ -1,4 +1,4 @@
-// db/numbers.js - Per-number model, fallback, token limit and usage tracking
+// db/numbers.js - Per-number model, fallback, token limit, web-search and usage tracking
 
 import { getSetting } from './settings.js';
 
@@ -9,14 +9,15 @@ export async function getNumberSettings(db, phoneNumber) {
   return row || null;
 }
 
-// Resolves effective model/fallback/limit for a number, applying global
-// defaults wherever a per-number override is NULL.
+// Resolves effective model/fallback/limit/web-search for a number, applying
+// global defaults wherever a per-number override is NULL.
 export async function getEffectiveConfig(db, phoneNumber) {
-  const [numberRow, globalModel, globalFallback, globalLimitRaw] = await Promise.all([
+  const [numberRow, globalModel, globalFallback, globalLimitRaw, globalWebSearchRaw] = await Promise.all([
     getNumberSettings(db, phoneNumber),
     getSetting(db, 'ai_model', 'openrouter/free'),
     getSetting(db, 'default_fallback_model', 'block'),
     getSetting(db, 'default_token_limit', ''),
+    getSetting(db, 'web_search_enabled', '0'),
   ]);
 
   const globalLimit = globalLimitRaw === '' || globalLimitRaw === null
@@ -35,6 +36,12 @@ export async function getEffectiveConfig(db, phoneNumber) {
     tokenLimit = globalLimit;
   }
 
+  // web_search: per-number NULL/undefined means "use global default".
+  // per-number 0 or 1 is an explicit override either way.
+  const webSearch = (numberRow && numberRow.web_search !== null && numberRow.web_search !== undefined)
+    ? !!numberRow.web_search
+    : globalWebSearchRaw === '1';
+
   const tokensUsed = (numberRow?.tokens_input_used || 0) + (numberRow?.tokens_output_used || 0);
 
   return {
@@ -43,6 +50,7 @@ export async function getEffectiveConfig(db, phoneNumber) {
     tokenLimit,
     tokensUsed,
     isOverLimit: tokenLimit !== null && tokensUsed >= tokenLimit,
+    webSearch,
   };
 }
 
@@ -76,6 +84,16 @@ export async function setNumberTokenLimit(db, phoneNumber, tokenLimit) {
     `INSERT INTO number_settings (phone_number, token_limit, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
      ON CONFLICT(phone_number) DO UPDATE SET token_limit = excluded.token_limit, updated_at = CURRENT_TIMESTAMP`
   ).bind(phoneNumber, tokenLimit === null || tokenLimit === undefined ? null : tokenLimit).run();
+}
+
+// New for feature-byok. webSearch: true/false sets an explicit per-number
+// override; null clears the override back to "inherit global default".
+export async function setNumberWebSearch(db, phoneNumber, webSearch) {
+  const value = webSearch === null || webSearch === undefined ? null : (webSearch ? 1 : 0);
+  await db.prepare(
+    `INSERT INTO number_settings (phone_number, web_search, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+     ON CONFLICT(phone_number) DO UPDATE SET web_search = excluded.web_search, updated_at = CURRENT_TIMESTAMP`
+  ).bind(phoneNumber, value).run();
 }
 
 export async function resetNumberUsage(db, phoneNumber) {
