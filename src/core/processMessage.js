@@ -14,7 +14,7 @@
 //   - Memory fetch/decrypt is isolated the same way: a failure there means the AI
 //     call proceeds without memory context, it never blocks or fails the reply.
 //
-// System-error handling (systemError: true, set in callAi when the OpenRouter call
+// System-error handling (systemError: true, set in callAi when the AI provider call
 // itself throws): the fallback text is delivered to the user and logged to Sheets on
 // every occurrence, same as any other reply. But it's only WRITTEN into the encrypted
 // conversation history ONCE per outage streak — deduped by checking whether the
@@ -28,11 +28,17 @@
 //     instead of denying anything happened.
 //   - Auto-naming and memory extraction never trigger off a system-error turn either
 //     way — those only fire from a genuine successful exchange.
+//
+// feature-byok: the AI call now goes through integrations/ai-provider.js (which
+// adds BYOK key resolution + web search on top of OpenRouter) instead of calling
+// providers/openrouter.js's getOpenRouterResponse() directly. Naming and memory
+// extraction (autoNaming.js / memoryExtraction.js) are UNCHANGED and still call
+// into providers/openrouter.js directly — see ai-provider.js's file comment for why.
 
 import { parseCommand, handleCommand } from '../commands/commands.js';
 import { containsBlockedContent } from '../security/filter.js';
 import { decryptFacts } from './memoryFacts.js';
-import { getOpenRouterResponse } from '../integrations/providers/openrouter.js';
+import { getAiResponse } from '../integrations/ai-provider.js';
 import { logToSheets, logFilteredMessage } from '../integrations/sheets.js';
 import {
   isBlacklisted, isWhitelisted, hasWhitelistEntries,
@@ -163,7 +169,8 @@ async function runAiTurn(env, ctx, db, phoneNumber, text, returnResult, modelOve
   const result = await callAi(env, phoneNumber, history, text, modelOverride, memoryFacts);
 
   if (result.blocked) {
-    // Limit-reached notice — delivered below, never saved or used for naming/memory.
+    // Limit-reached / BYOK-hard-fail notice — delivered below, never saved or
+    // used for naming/memory.
   } else if (result.systemError) {
     // Save this exact error text at most once per outage streak. `history` here is
     // the state BEFORE this turn, so its last entry is whatever the previous turn
@@ -251,9 +258,9 @@ async function fetchMemoryFacts(db, phoneNumber, encryptionKey) {
 
 async function callAi(env, phoneNumber, history, text, modelOverride, memoryFacts) {
   try {
-    return await getOpenRouterResponse(env, phoneNumber, history, text, modelOverride, memoryFacts);
+    return await getAiResponse(env, phoneNumber, history, text, modelOverride, memoryFacts);
   } catch (err) {
-    console.error('OpenRouter error:', err);
+    console.error('AI provider error:', err);
     return {
       text: "Sorry, I'm having trouble thinking right now. Please try again in a moment!",
       modelUsed: null,
